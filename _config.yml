@@ -1,0 +1,2 @@
+# Serve the Android app-link file used by the Atom Burst Play Store app
+include: [".well-known"]

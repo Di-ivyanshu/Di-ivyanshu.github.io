@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.github.diivyanshu.atomburst",
+      "sha256_cert_fingerprints": ["53:B7:2A:28:5C:87:B5:A0:A5:F6:31:77:73:91:F6:F1:D2:D8:75:2C:2F:53:79:DD:33:0B:1F:88:83:BA:22:93"]
+    }
+  }
+]
