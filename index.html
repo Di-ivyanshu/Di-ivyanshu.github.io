@@ -131,12 +131,47 @@ video{display:block}
 [data-horizon]{height:clamp(380px,64svh,560px)!important}
 [data-horizon-foot]{flex-direction:column;align-items:flex-start!important;gap:8px!important}
 }
+/* lower sections skip layout/paint until they come near the screen (sticky side labels need >=1440px, so only below that) */
+@media (max-width:1439px){#oss,#lab,#skills,#contact{content-visibility:auto}#oss{contain-intrinsic-size:auto 940px}#lab{contain-intrinsic-size:auto 900px}#skills{contain-intrinsic-size:auto 640px}#contact{contain-intrinsic-size:auto 670px}}
+@media (max-width:760px){#oss{contain-intrinsic-size:auto 1650px}#lab{contain-intrinsic-size:auto 1040px}#skills{contain-intrinsic-size:auto 740px}#contact{contain-intrinsic-size:auto 1050px}}
+/* horizon: film grain like the hero loop, only where the light is */
+[data-h-grain]{opacity:.3;mix-blend-mode:overlay;background-size:160px;background-image:url("assets/grain.webp");-webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 64%,#000 25%,transparent 78%);mask-image:radial-gradient(ellipse 62% 58% at 50% 64%,#000 25%,transparent 78%)}
+/* "Work": sunset light follows the pointer across the letters (mirage shimmer is added in JS) */
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+[data-mirage]{--hx:-9999px;--hy:50%;background-image:radial-gradient(circle clamp(90px,11vw,200px) at var(--hx) var(--hy),#fff3df 0%,#ffc887 24%,#ff8a3d 52%,var(--ink) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important}
+}
+/* statement columns: typed in once, a dune card rises behind on hover */
+[data-col]{position:relative;isolation:isolate;padding:22px 22px 34px;border-radius:22px}
+[data-col]::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;transform:translateY(8px) scale(.97);transition:opacity .45s cubic-bezier(.2,.8,.2,1),transform .55s cubic-bezier(.2,.8,.2,1);background:radial-gradient(ellipse 70% 60% at 50% 120%,rgba(255,122,61,.42),rgba(255,122,61,0) 72%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 40' preserveAspectRatio='none'%3E%3Cpath d='M0 22C70 10 140 12 210 20S340 14 400 16V40H0Z' fill='%231a0d07' stroke='%23ff9a55' stroke-opacity='.45'/%3E%3Cpath d='M0 30C90 22 180 25 260 31S370 28 400 29V40H0Z' fill='%23110a07'/%3E%3C/svg%3E") bottom/100% 40px no-repeat,color-mix(in srgb,var(--card) 92%,transparent)}
+@media (hover:hover){[data-col]:hover::before{opacity:1;transform:none}}
+@media (hover:none){[data-col]::before{opacity:1;transform:none}}
+.tc{opacity:0}.tc.on{opacity:1}
+[data-caret]{display:inline-block;width:.5em;height:1.05em;margin-left:1px;vertical-align:-.16em;background:var(--accent);animation:caretBlink 1s steps(1) infinite}
+@keyframes caretBlink{50%{opacity:0}}
+/* open source + lab panels share the Work card family */
+[data-oss-panel],[data-lab-panel]{transition:background-color .6s}
+@media (hover:hover){
+[data-oss-card]:hover [data-oss-panel],[data-lab-panel]:hover{background-color:color-mix(in srgb,var(--card) 100%,#2a140a 12%)!important}
+[data-oss-card]:hover [data-glow-soft],[data-lab-panel]:hover [data-glow-soft]{opacity:1!important}
+}
+[data-lab-play]{opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
+[data-lab-film]:hover [data-lab-play],[data-lab-film]:focus-visible [data-lab-play]{opacity:1;transform:none}
+@media (hover:none){[data-lab-play]{opacity:1;transform:none}}
+@media (max-width:760px){
+[data-lab-body]{grid-template-columns:minmax(0,1fr)!important;padding:20px 18px 92px!important;gap:22px!important}
+[data-lab-film]{aspect-ratio:4/3!important;margin:10px 10px 0!important}
+[data-oss-body]{padding:20px 18px 84px!important}
+[data-cols]{margin-left:-14px!important;margin-right:-14px!important}
+[data-col]{padding:18px 14px 30px!important}
+}
 .scp0:hover{transform:scale(1.04) !important;color:#000 !important}
 .scp1:hover{opacity:1 !important;color:#2e2e2e !important}
 .scp2:hover{background:#323234 !important;color:#fff !important;transform:translateY(-1px) !important}
 .scp3:hover{transform:translateY(-2px) scale(1.02) !important;box-shadow:0 0 0 1px rgba(255,214,170,.45),0 0 32px rgba(255,140,70,.7),0 0 64px rgba(255,110,50,.32) !important;color:#000 !important}
 .scp4:hover{color:inherit !important}
-.scp5:focus{border-color:var(--accent) !important}
+.scp5:hover{transform:translateY(-1px) !important;box-shadow:0 0 24px rgba(255,122,61,.45) !important;color:var(--accent-ink) !important}
+.scp6:hover{background:color-mix(in srgb,var(--ink) 16%,transparent) !important;color:var(--ink) !important}
+.scp7:focus{border-color:var(--accent) !important}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 [data-g]::before{content:attr(data-g)}
 .js [data-ref="name"]{visibility:hidden;animation:nameFallback 0s 3s forwards}
@@ -199,29 +234,29 @@ video{display:block}
 
 <section id="statement" data-gutter="true" data-screen-label="Statement" style="position:relative;z-index:1;padding:clamp(80px,14vw,180px) 28px;max-width:1240px;margin:0 auto">
 <p data-statement="true" style="margin:0;font-size:clamp(30px,4.6vw,62px);font-weight:500;line-height:1.1;letter-spacing:-.03em;text-wrap:balance;max-width:1040px">Most AI demos <span style="color:var(--muted)">talk</span>. Mine <em>file the email</em>, <em>book the meeting</em>, and <em>survive the outage</em>.</p>
-<div data-reveal="150" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:32px;margin-top:64px;padding-top:32px;border-top:1px solid var(--line)">
-<div><p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">SINCE 2025</p><p style="margin:8px 0 0;font-size:16px;line-height:1.5">AI Engineer at Web Techno Softwares, shipping three production AI platforms.</p></div>
-<div><p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">FOCUS</p><p style="margin:8px 0 0;font-size:16px;line-height:1.5">Agents with real tools, governed LLM workflows, retrieval with evaluation, the backends underneath.</p></div>
-<div><p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">STANCE</p><p style="margin:8px 0 0;font-size:16px;line-height:1.5">Rules first, model second, human approval where it matters. Every claim traceable to a source.</p></div>
+<div data-cols style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:14px;margin:56px -22px 0">
+<div data-col><p data-type style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">SINCE 2025</p><p data-type style="margin:8px 0 0;font-size:16px;line-height:1.5">AI Engineer at Web Techno Softwares, shipping three production AI platforms.</p></div>
+<div data-col><p data-type style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">FOCUS</p><p data-type style="margin:8px 0 0;font-size:16px;line-height:1.5">Agents with real tools, governed LLM workflows, retrieval with evaluation, the backends underneath.</p></div>
+<div data-col><p data-type style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--accent)">STANCE</p><p data-type style="margin:8px 0 0;font-size:16px;line-height:1.5">Rules first, model second, human approval where it matters. Every claim traceable to a source.</p></div>
 </div>
 </section>
 
 <section id="work" data-gutter="true" data-screen-label="Work" style="position:relative;z-index:1;padding:0 28px 120px;max-width:1240px;margin:0 auto">
 <div data-sticky-label="true" aria-hidden="true" style="position:sticky;top:46vh;height:0;width:0;z-index:2"><span style="position:absolute;left:-64px;top:0;transform:rotate(-90deg) translateX(-100%);transform-origin:left top;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);display:flex;gap:10px;align-items:center"><span style="color:var(--accent)">01</span>WORK<span style="display:inline-block;width:28px;height:1px;background:var(--line)"></span></span></div>
-<div data-horizon style="position:relative;width:100vw;margin-left:calc(50% - 50vw);height:clamp(460px,82vh,800px);overflow:hidden;margin-bottom:clamp(20px,3vw,44px);background:var(--paper)">
-<div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg,var(--paper) 0%,#100705 26%,#2a1007 48%,#6e270c 64%,#c9561c 77%,#ff8a45 86%)"></div>
-<div data-h-sun aria-hidden="true" style="position:absolute;left:50%;top:50%;width:clamp(200px,27vw,430px);aspect-ratio:1;transform:translate(-50%,0);border-radius:50%;background:radial-gradient(circle,#fff1da 0%,#ffc887 20%,#ff8a3d 44%,rgba(255,106,40,0) 70%)"></div>
-<div aria-hidden="true" style="position:absolute;left:-10%;right:-10%;top:52%;height:34%;background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(255,138,69,.55),rgba(255,138,69,0) 70%)"></div>
-<svg data-h-dune="3" aria-hidden="true" viewBox="0 0 1440 320" preserveAspectRatio="none" style="bottom:-6%;height:58%"><path d="M0,170 C160,118 330,104 520,138 C700,170 830,128 1010,104 C1190,80 1320,122 1440,116 L1440,320 L0,320 Z" style="fill:#2b1108;stroke:#ff9a55;stroke-opacity:.5;stroke-width:1.5" vector-effect="non-scaling-stroke"/></svg>
-<div data-h-title style="position:absolute;left:0;right:0;top:12%;text-align:center">
-<h2 style="margin:0;font-size:clamp(84px,15vw,232px);font-weight:500;letter-spacing:-.055em;line-height:.9;color:var(--ink)">Work</h2>
+<div data-horizon style="position:relative;width:100vw;margin-left:calc(50% - 50vw);height:clamp(480px,84vh,820px);overflow:hidden;margin-bottom:clamp(8px,2vw,28px)">
+<div aria-hidden="true" style="position:absolute;left:-20%;right:-20%;top:6%;bottom:0;pointer-events:none;background:radial-gradient(ellipse 48% 52% at 50% 66%,rgba(255,138,69,.62) 0%,rgba(201,86,28,.42) 26%,rgba(110,39,12,.24) 48%,rgba(42,16,7,.1) 66%,rgba(11,11,14,0) 80%)"></div>
+<div data-h-sun aria-hidden="true" style="position:absolute;left:50%;top:34%;width:clamp(200px,27vw,430px);aspect-ratio:1;transform:translate(-50%,0);border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fff1da 0%,#ffc887 20%,#ff8a3d 44%,rgba(255,106,40,0) 70%)"></div>
+<svg data-h-dune="3" aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="none" style="top:0;height:100%;overflow:visible;pointer-events:none"><defs><linearGradient id="hfill3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d180b"/><stop offset=".22" stop-color="#1e0c06"/><stop offset=".5" stop-color="#0b0b0e"/></linearGradient><linearGradient id="hrim3" x1="0" x2="1"><stop offset="0" stop-color="#ff9a55" stop-opacity="0"/><stop offset=".5" stop-color="#ffd09a" stop-opacity=".95"/><stop offset="1" stop-color="#ff9a55" stop-opacity="0"/></linearGradient></defs><path d="M0,560 C140,520 300,470 470,500 C600,522 700,590 860,586 C1030,582 1150,500 1300,492 C1370,488 1410,500 1440,508 L1440,1120 L0,1120 Z" style="fill:url(#hfill3);stroke:url(#hrim3);stroke-width:1.6" vector-effect="non-scaling-stroke"/></svg>
+<div data-h-title style="position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none">
+<h2 data-mirage style="display:inline-block;margin:0;padding:0 .08em;font-size:clamp(84px,15vw,232px);font-weight:500;letter-spacing:-.055em;line-height:.95;color:var(--ink);pointer-events:auto">Work</h2>
 </div>
-<svg data-h-dune="2" aria-hidden="true" viewBox="0 0 1440 320" preserveAspectRatio="none" style="bottom:-6%;height:44%"><path d="M0,214 C210,160 430,182 640,214 C840,244 1010,170 1210,160 C1330,154 1400,176 1440,186 L1440,320 L0,320 Z" style="fill:#170905;stroke:#ffb070;stroke-opacity:.32;stroke-width:1.5" vector-effect="non-scaling-stroke"/></svg>
-<svg data-h-dune="1" aria-hidden="true" viewBox="0 0 1440 320" preserveAspectRatio="none" style="bottom:-8%;height:32%"><path d="M0,262 C250,222 500,232 740,258 C980,284 1210,232 1440,246 L1440,320 L0,320 Z" style="fill:var(--paper)"/></svg>
-<div data-gutter="true" data-horizon-foot style="position:absolute;left:0;right:0;bottom:clamp(14px,2.4vw,28px);max-width:1240px;margin:0 auto;padding:0 28px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:flex-end;gap:16px">
+<svg data-h-dune="2" aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="none" style="top:0;height:100%;overflow:visible;pointer-events:none"><defs><linearGradient id="hfill2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a110a"/><stop offset=".25" stop-color="#120907"/><stop offset=".45" stop-color="#0b0b0e"/></linearGradient><linearGradient id="hrim2" x1="0" x2="1"><stop offset="0" stop-color="#ff9a55" stop-opacity="0"/><stop offset=".5" stop-color="#ffd09a" stop-opacity=".6"/><stop offset="1" stop-color="#ff9a55" stop-opacity="0"/></linearGradient></defs><path d="M0,700 C180,650 360,628 560,660 C760,692 900,742 1100,720 C1250,704 1360,668 1440,664 L1440,1120 L0,1120 Z" style="fill:url(#hfill2);stroke:url(#hrim2);stroke-width:1.6" vector-effect="non-scaling-stroke"/></svg>
+<svg data-h-dune="1" aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="none" style="top:0;height:100%;overflow:visible;pointer-events:none"><defs></defs><path d="M0,812 C220,786 460,770 700,800 C940,830 1180,800 1440,770 L1440,1120 L0,1120 Z" style="fill:var(--paper)" vector-effect="non-scaling-stroke"/></svg>
+<div data-h-grain aria-hidden="true" style="position:absolute;inset:0;pointer-events:none"></div>
+<div data-gutter="true" data-horizon-foot style="position:absolute;left:0;right:0;bottom:clamp(14px,2.4vw,28px);max-width:1240px;margin:0 auto;padding:0 28px;box-sizing:border-box">
 <p style="margin:0;font-size:clamp(16px,1.5vw,19px);line-height:1.5;max-width:540px;color:var(--ink)">Three production AI platforms, shipped at Web Techno Softwares since May 2025.</p>
-<p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--muted)">SCROLL FOR THE WORK ↓</p>
 </div>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><filter id="mirage" x="-4%" y="-14%" width="108%" height="128%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.05" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
 </div>
 
 <article data-reveal="0" data-proj="zoomey" style="--pc:rgba(255,150,70,1);--sx:74%;--lit:0;padding:14px 0">
@@ -293,53 +328,66 @@ video{display:block}
 
 <section id="oss" data-gutter="true" data-screen-label="Open source" style="position:relative;z-index:1;padding:40px 28px 120px;max-width:1240px;margin:0 auto">
 <div data-sticky-label="true" aria-hidden="true" style="position:sticky;top:46vh;height:0;width:0;z-index:2"><span style="position:absolute;left:-64px;top:0;transform:rotate(-90deg) translateX(-100%);transform-origin:left top;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);display:flex;gap:10px;align-items:center"><span style="color:var(--accent)">02</span>OPEN SOURCE<span style="display:inline-block;width:28px;height:1px;background:var(--line)"></span></span></div>
-<div data-reveal="0" data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:40px;flex-wrap:wrap">
+<div data-reveal="0" style="margin-bottom:36px">
+<div data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap">
 <h2 style="margin:0;font-size:clamp(28px,4vw,52px);font-weight:500;letter-spacing:-.03em;white-space:nowrap">Open source</h2>
 <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--muted)">LIVE FROM GITHUB · <span data-gh="updated">LOADING</span></p>
 </div>
-<div data-oss-grid="true" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:28px">
-
-<a href="https://github.com/Di-ivyanshu/llm-gateway" target="_blank" rel="noopener" data-reveal="0" data-tilt="true" style="display:block;color:inherit" class="scp4">
-<div data-tilt-inner="true" style="border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:22px;background:var(--card);overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.4)">
-<div style="overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#2a1409,#0e0b09 60%,#1f0d07)"><video src="assets/llm-gateway-dashboard.mp4" data-poster="assets/llm-gateway-dashboard-poster.webp" muted loop playsinline preload="none" aria-hidden="true" data-parallax="18" style="width:100%;height:100%;object-fit:cover"></video></div>
-<div data-oss-body="true" style="padding:26px 26px 28px">
-<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap"><h3 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em">llm-gateway</h3><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap">★ <span data-gh="gw-stars">…</span> · <span data-gh="gw-pushed">…</span></span></div>
-<p style="margin:12px 0 0;font-size:15px;line-height:1.55;color:var(--muted)">Self-healing, OpenAI-compatible LLM proxy. Per-provider health windows in Redis, circuit breakers with half-open recovery, failover and hedging, a deferrable queue with idempotency, cost attributed per tenant and feature.</p>
-<div data-oss-stats="true" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">100%</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">AVAILABILITY UNDER CHAOS</p></div>
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">28%</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">SINGLE PROVIDER BASELINE</p></div>
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">117</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">OFFLINE TESTS</p></div>
+<svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-oss" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-oss)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
 </div>
+<div data-oss-grid="true" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:24px">
+
+<a href="https://github.com/Di-ivyanshu/llm-gateway" target="_blank" rel="noopener" data-reveal="0" data-tilt="true" data-oss-card style="--pc:rgba(255,150,70,1);display:block;color:inherit" class="scp4">
+<div data-tilt-inner="true" data-oss-panel style="position:relative;isolation:isolate;height:100%;border-radius:28px;background-color:color-mix(in srgb,var(--card) 88%,transparent);overflow:hidden">
+<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;overflow:hidden"><div data-glow-soft style="position:absolute;left:0;right:0;bottom:0;height:85%;background:radial-gradient(ellipse 55% 62% at 22% 96%,color-mix(in srgb,var(--pc) 38%,transparent),transparent 72%);opacity:.75;transition:opacity .6s"></div><svg viewBox="0 0 1200 200" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:100%;height:min(26%,96px);display:block"><path d="M0,118 C180,78 360,84 560,116 C760,148 930,86 1200,98 L1200,200 L0,200 Z" style="fill:#160c07;stroke:var(--pc);stroke-opacity:.4;stroke-width:1.5" vector-effect="non-scaling-stroke"/><path d="M0,162 C240,128 500,140 760,164 C960,182 1090,150 1200,156 L1200,200 L0,200 Z" style="fill:#100a07"/></svg></div>
+<div style="margin:14px 14px 0;border-radius:18px;overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#2a1409,#0e0b09 60%,#1f0d07)"><video src="assets/llm-gateway-dashboard.mp4" data-poster="assets/llm-gateway-dashboard-poster.webp" muted loop playsinline preload="none" aria-hidden="true" data-parallax="18" style="width:100%;height:100%;object-fit:cover"></video></div>
+<div data-oss-body="true" style="padding:24px 28px 92px">
+<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap"><h3 style="margin:0;font-size:clamp(26px,2.6vw,34px);font-weight:500;letter-spacing:-.03em">llm-gateway</h3><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap">★ <span data-gh="gw-stars">…</span> · <span data-gh="gw-pushed">…</span></span></div>
+<p style="margin:12px 0 0;font-size:16px;line-height:1.55;color:var(--muted)">Self-healing, OpenAI-compatible LLM proxy. Per-provider health windows in Redis, circuit breakers with half-open recovery, failover and hedging, a deferrable queue with idempotency, cost attributed per tenant and feature.</p>
+<div data-card-nums style="display:flex;flex-wrap:wrap;gap:14px 34px;margin-top:26px"><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">100%</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">available under injected provider failures</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">28%</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">the same traffic pinned to one provider</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">117</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">offline tests</p></div></div>
+<p style="margin:26px 0 0;font-size:13px;font-weight:600;color:var(--ink)">Source on GitHub ↗</p>
 </div></div></a>
 
-<a href="https://github.com/Di-ivyanshu/nocturne-RAG" target="_blank" rel="noopener" data-reveal="120" data-tilt="true" style="display:block;color:inherit" class="scp4">
-<div data-tilt-inner="true" style="border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:22px;background:var(--card);overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.4)">
-<div style="overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#24100a,#0e0b09 60%,#2a1608)"><video src="assets/nocturne-graph.mp4" data-poster="assets/nocturne-graph-poster.webp" muted loop playsinline preload="none" aria-hidden="true" data-parallax="18" style="width:100%;height:100%;object-fit:cover"></video></div>
-<div data-oss-body="true" style="padding:26px 26px 28px">
-<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap"><h3 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em">nocturne-RAG</h3><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap">★ <span data-gh="rag-stars">…</span> · <span data-gh="rag-pushed">…</span></span></div>
-<p style="margin:12px 0 0;font-size:15px;line-height:1.55;color:var(--muted)">Self-correcting RAG over private documents. Hybrid BGE plus BM25 retrieval, cross-encoder re-ranking, an answer agent checked by a critic agent, citations to file and page, a knowledge graph of entities, and an evaluation harness.</p>
-<div data-oss-stats="true" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)">
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">16/16</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">GOLDEN SET CORRECT</p></div>
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">Abstains</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">WHEN UNSUPPORTED</p></div>
-<div><p style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em">SSE</p><p style="margin:2px 0 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)">STREAMING VIA FASTAPI</p></div>
-</div>
+<a href="https://github.com/Di-ivyanshu/nocturne-RAG" target="_blank" rel="noopener" data-reveal="120" data-tilt="true" data-oss-card style="--pc:rgba(255,96,60,1);display:block;color:inherit" class="scp4">
+<div data-tilt-inner="true" data-oss-panel style="position:relative;isolation:isolate;height:100%;border-radius:28px;background-color:color-mix(in srgb,var(--card) 88%,transparent);overflow:hidden">
+<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;overflow:hidden"><div data-glow-soft style="position:absolute;left:0;right:0;bottom:0;height:85%;background:radial-gradient(ellipse 55% 62% at 78% 96%,color-mix(in srgb,var(--pc) 38%,transparent),transparent 72%);opacity:.75;transition:opacity .6s"></div><svg viewBox="0 0 1200 200" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:100%;height:min(26%,96px);display:block"><path d="M0,118 C180,78 360,84 560,116 C760,148 930,86 1200,98 L1200,200 L0,200 Z" style="fill:#160c07;stroke:var(--pc);stroke-opacity:.4;stroke-width:1.5" vector-effect="non-scaling-stroke"/><path d="M0,162 C240,128 500,140 760,164 C960,182 1090,150 1200,156 L1200,200 L0,200 Z" style="fill:#100a07"/></svg></div>
+<div style="margin:14px 14px 0;border-radius:18px;overflow:hidden;aspect-ratio:16/9;background:linear-gradient(135deg,#24100a,#0e0b09 60%,#2a1608)"><video src="assets/nocturne-graph.mp4" data-poster="assets/nocturne-graph-poster.webp" muted loop playsinline preload="none" aria-hidden="true" data-parallax="18" style="width:100%;height:100%;object-fit:cover"></video></div>
+<div data-oss-body="true" style="padding:24px 28px 92px">
+<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap"><h3 style="margin:0;font-size:clamp(26px,2.6vw,34px);font-weight:500;letter-spacing:-.03em">nocturne-RAG</h3><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap">★ <span data-gh="rag-stars">…</span> · <span data-gh="rag-pushed">…</span></span></div>
+<p style="margin:12px 0 0;font-size:16px;line-height:1.55;color:var(--muted)">Self-correcting RAG over private documents. Hybrid BGE plus BM25 retrieval, cross-encoder re-ranking, an answer agent checked by a critic agent, citations to file and page, a knowledge graph of entities, and an evaluation harness.</p>
+<div data-card-nums style="display:flex;flex-wrap:wrap;gap:14px 34px;margin-top:26px"><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">16/16</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">golden-set questions answered correctly</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">Abstains</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">when the documents can’t support an answer</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">SSE</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">streamed through FastAPI</p></div></div>
+<p style="margin:26px 0 0;font-size:13px;font-weight:600;color:var(--ink)">Source on GitHub ↗</p>
 </div></div></a>
 </div>
 </section>
 
 <section id="lab" data-gutter="true" data-screen-label="Lab" style="position:relative;z-index:1;padding:40px 28px 120px;max-width:1240px;margin:0 auto">
 <div data-sticky-label="true" aria-hidden="true" style="position:sticky;top:46vh;height:0;width:0;z-index:2"><span style="position:absolute;left:-64px;top:0;transform:rotate(-90deg) translateX(-100%);transform-origin:left top;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);display:flex;gap:10px;align-items:center"><span style="color:var(--accent)">03</span>LAB<span style="display:inline-block;width:28px;height:1px;background:var(--line)"></span></span></div>
-<div data-reveal="0" data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:40px;flex-wrap:wrap">
+<div data-reveal="0">
+<div data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap">
 <h2 style="margin:0;font-size:clamp(28px,4vw,52px);font-weight:500;letter-spacing:-.03em;white-space:nowrap">Lab</h2>
-<p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--muted)">MOTION AND INTERFACE EXPERIMENTS</p>
+<p style="margin:0;font-size:15px;line-height:1.5;color:var(--muted)">I also design and build scroll-driven motion websites.</p>
 </div>
-<div data-reveal="0" data-tilt="true" style="position:relative">
-<div data-tilt-inner="true" style="border-radius:24px;overflow:hidden;border:1px solid var(--line);position:relative;aspect-ratio:21/9;min-height:220px;background:linear-gradient(120deg,#24100a,#000 55%,#1f0b06);box-shadow:0 40px 100px -40px rgba(0,0,0,.5)">
+<svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-lab" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-lab)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
+</div>
+<div data-lab-panel data-reveal="0" style="--pc:rgba(255,122,61,1);position:relative;isolation:isolate;margin-top:32px;border-radius:28px;background-color:color-mix(in srgb,var(--card) 88%,transparent);overflow:hidden">
+<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;overflow:hidden"><div data-glow-soft style="position:absolute;left:0;right:0;bottom:0;height:85%;background:radial-gradient(ellipse 55% 62% at 70% 100%,color-mix(in srgb,var(--pc) 38%,transparent),transparent 72%);opacity:.75;transition:opacity .6s"></div><svg viewBox="0 0 1200 200" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:100%;height:min(22%,110px);display:block"><path d="M0,118 C180,78 360,84 560,116 C760,148 930,86 1200,98 L1200,200 L0,200 Z" style="fill:#160c07;stroke:var(--pc);stroke-opacity:.4;stroke-width:1.5" vector-effect="non-scaling-stroke"/><path d="M0,162 C240,128 500,140 760,164 C960,182 1090,150 1200,156 L1200,200 L0,200 Z" style="fill:#100a07"/></svg></div>
+<a href="https://motionscroll-chiron.netlify.app" target="_blank" rel="noopener" data-lab-film aria-label="Open CHIRON, the scroll-driven film, live" style="display:block;position:relative;margin:14px 14px 0;border-radius:20px;overflow:hidden;aspect-ratio:21/9;min-height:220px;background:linear-gradient(120deg,#24100a,#000 55%,#1f0b06);color:#fff">
 <video src="assets/chiron-motion.mp4" data-poster="assets/chiron-motion-poster.webp" muted loop playsinline preload="none" aria-hidden="true" data-parallax="24" style="width:100%;height:100%;object-fit:cover;opacity:.92"></video>
-<div data-lab-cap="true" style="position:absolute;left:0;right:0;bottom:0;padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65))">
-<div><p style="margin:0 0 6px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;opacity:.7">SCROLL-DRIVEN DESIGN STUDY</p><h3 style="margin:0;font-size:clamp(22px,3vw,40px);font-weight:500;letter-spacing:-.02em">Then the light.</h3></div>
-<p style="margin:0;font-size:14px;max-width:360px;line-height:1.5;opacity:.85" data-hide-mobile="true">An eight-chapter scroll film: pinned scenes, frame scrubbing, typographic beats. Built to learn how far a browser can be pushed before it stops feeling like a web page.</p>
+<div data-lab-cap="true" style="position:absolute;left:0;right:0;bottom:0;padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;background:linear-gradient(transparent,rgba(0,0,0,.65))">
+<h3 style="margin:0;font-size:clamp(26px,3.6vw,52px);font-weight:500;letter-spacing:-.03em;line-height:1">Then the light.</h3>
+<span data-lab-play aria-hidden="true" style="flex-shrink:0;padding:10px 16px;border-radius:999px;background:rgba(14,10,8,.72);backdrop-filter:blur(8px);font-size:13px;font-weight:600;white-space:nowrap">Scroll it live ↗</span>
 </div>
+</a>
+<div data-lab-body style="display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px 48px;padding:28px 32px 112px;align-items:start">
+<div>
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--muted);max-width:520px">CHIRON is an eight-chapter film about the Bugatti Chiron that plays as you scroll. Scroll position picks the frame, so the visitor drives the camera; a full brand page follows the film.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px">
+<a href="https://motionscroll-chiron.netlify.app" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:13px 22px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;transition:transform .2s,box-shadow .2s" class="scp5">Open the live film ↗</a>
+<a href="https://github.com/Di-ivyanshu/chiron-scroll" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:13px 22px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--ink);font-weight:600;font-size:14px;transition:background .2s" class="scp6">Read the code ↗</a>
+</div>
+</div>
+<div data-card-nums style="display:flex;flex-wrap:wrap;gap:14px 34px;margin-top:4px"><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">540</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">WebP frames scrubbed on a canvas</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">8</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">chapters in one continuous film</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">77 s</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">of footage, decoded in a sliding window so phones keep up</p></div></div>
 </div>
 </div>
 </section>
@@ -347,9 +395,12 @@ video{display:block}
 <section id="skills" data-screen-label="Skills" style="position:relative;z-index:1;padding:40px 0 140px;overflow:hidden">
 <div data-gutter="true" style="max-width:1240px;margin:0 auto;padding:0 28px">
 <div data-sticky-label="true" aria-hidden="true" style="position:sticky;top:46vh;height:0;width:0;z-index:2"><span style="position:absolute;left:-64px;top:0;transform:rotate(-90deg) translateX(-100%);transform-origin:left top;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--muted);display:flex;gap:10px;align-items:center"><span style="color:var(--accent)">04</span>STACK<span style="display:inline-block;width:28px;height:1px;background:var(--line)"></span></span></div>
-<div data-reveal="0" data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;flex-wrap:wrap">
+<div data-reveal="0">
+<div data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap">
 <h2 style="margin:0;font-size:clamp(28px,4vw,52px);font-weight:500;letter-spacing:-.03em;white-space:nowrap">Stack</h2>
 <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--muted)">DRAG THE RING</p>
+</div>
+<svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-stack" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-stack)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
 </div>
 </div>
 <div data-ring-wrap="true" style="perspective:1400px;height:360px;display:grid;place-items:center;margin-top:20px;user-select:none">
@@ -399,9 +450,9 @@ video{display:block}
 </div>
 </div>
 <form data-contact-form="true" data-ref="form" style="display:grid;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px">
-<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">NAME<input name="name" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;outline:none" class="scp5"></label>
-<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">EMAIL<input name="email" type="email" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;outline:none" class="scp5"></label>
-<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">MESSAGE<textarea name="message" rows="5" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;resize:vertical;outline:none" class="scp5"></textarea></label>
+<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">NAME<input name="name" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;outline:none" class="scp7"></label>
+<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">EMAIL<input name="email" type="email" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;outline:none" class="scp7"></label>
+<label style="display:grid;gap:6px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted)">MESSAGE<textarea name="message" rows="5" required="" style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-size:15px;resize:vertical;outline:none" class="scp7"></textarea></label>
 <button type="submit" data-magnetic="true" style="padding:16px 22px;border-radius:999px;border:none;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;cursor:pointer">Send message</button>
 <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5" data-ref="formNote" aria-live="polite">Lands in my inbox. No mail app needed.</p>
 </form>

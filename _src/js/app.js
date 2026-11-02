@@ -133,7 +133,8 @@
       const rise = ease(Math.min(1, p / 0.62));
       title.style.transform = 'translate3d(0,' + ((1 - rise) * H * 0.42).toFixed(1) + 'px,0)';
       title.style.opacity = (0.15 + 0.85 * rise).toFixed(3);
-      sun.style.transform = 'translate3d(-50%,' + (lerp(-0.16, 0.22, p) * H).toFixed(1) + 'px,0)';
+      const narrow = innerWidth < 760;   // phones: the sun starts below the title so the word never sits on the bright core
+      sun.style.transform = 'translate3d(-50%,' + (lerp(narrow ? 0 : -0.14, narrow ? 0.2 : 0.13, p) * H).toFixed(1) + 'px,0)';   // half-sun on the crest mid-scroll
       dunes.forEach((d, k) => { if (d) d.style.transform = 'translate3d(0,' + (lerp(travel[k][0], travel[k][1], p) * H).toFixed(1) + 'px,0)'; });
     };
     const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
@@ -145,6 +146,80 @@
     update();
   }
 
+  /* ---------- "Work": sunset light follows the pointer, the letters shimmer like a desert mirage ---------- */
+  function initWorkTitle() {
+    const h = $('[data-mirage]', root); if (!h || reduced) return;
+    const filt = document.getElementById('mirage');
+    const turb = filt && filt.querySelector('feTurbulence'), disp = filt && filt.querySelector('feDisplacementMap');
+    let tx = -9999, ty = 0, x = -9999, y = 0, over = false, amp = 0, raf = 0;
+    const loop = now => {
+      raf = 0;
+      x += (tx - x) * 0.14; y += (ty - y) * 0.14;
+      h.style.setProperty('--hx', x.toFixed(1) + 'px'); h.style.setProperty('--hy', y.toFixed(1) + 'px');
+      amp += ((over ? 7 : 0) - amp) * 0.08;
+      if (disp) {
+        disp.setAttribute('scale', amp.toFixed(2));
+        turb.setAttribute('baseFrequency', '0.006 ' + (0.05 + 0.012 * Math.sin(now / 260)).toFixed(4));
+        h.style.filter = amp > 0.05 ? 'url(#mirage)' : '';
+      }
+      if (over || amp > 0.05 || Math.abs(tx - x) > 0.5) raf = requestAnimationFrame(loop);
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    const local = e => { const r = h.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    h.addEventListener('pointerenter', e => { if (e.pointerType === 'touch') return; over = true; [x, y] = local(e); [tx, ty] = [x, y]; kick(); });
+    h.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; [tx, ty] = local(e); kick(); });
+    h.addEventListener('pointerleave', () => { over = false; tx = h.offsetWidth * 1.4; kick(); });   // the light slides off to the right
+    // touch screens have no hover: the light sweeps across the word once, after it has risen
+    if (isTouch) {
+      const io = new IntersectionObserver(en => {
+        if (!en[0].isIntersecting) return; io.disconnect();
+        setTimeout(() => {
+          const w = h.offsetWidth, t0 = performance.now(), dur = 1800;
+          ty = y = h.offsetHeight * 0.55; x = -w * 0.3;
+          const sweep = now => { const p = Math.min(1, (now - t0) / dur); tx = x = -w * 0.3 + w * 1.7 * (p * p * (3 - 2 * p)); h.style.setProperty('--hx', x + 'px'); h.style.setProperty('--hy', y + 'px'); if (p < 1) requestAnimationFrame(sweep); };
+          requestAnimationFrame(sweep);
+        }, 500);
+      }, { threshold: 0.9 });
+      io.observe(h);
+    }
+  }
+
+  /* ---------- statement columns: each one types itself out once, with a caret ---------- */
+  function initTyping() {
+    const box = $('[data-cols]', root); if (!box || reduced) return;
+    // split the text into characters only when the columns are half a screen away (keeps startup light)
+    const near = new IntersectionObserver(en => { if (en.some(x => x.isIntersecting)) { near.disconnect(); prepareTyping(box); } }, { rootMargin: '50% 0px' });
+    near.observe(box);
+  }
+  function prepareTyping(box) {
+    const cols = $$('[data-col]', box).map(col => $$('[data-type]', col).map(p => {
+      const text = p.textContent; p.textContent = '';
+      const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = text;   // what readers and crawlers get
+      const vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true');
+      const chars = [...text].map(c => { const s = document.createElement('span'); s.className = 'tc'; s.textContent = c; vis.appendChild(s); return s; });
+      p.append(sr, vis);
+      return { chars, speed: p === col.firstElementChild ? 38 : 14 };   // label slower, body quick
+    }));
+    const typeCol = (lines, delay) => setTimeout(() => {
+      const caret = document.createElement('span'); caret.setAttribute('data-caret', ''); caret.setAttribute('aria-hidden', 'true');
+      let li = 0, ci = 0, last = 0;
+      const step = now => {
+        const line = lines[li];
+        if (now - last >= line.speed) {
+          last = now; const c = line.chars[ci++]; c.classList.add('on'); c.after(caret);
+          if (ci >= line.chars.length) { li++; ci = 0; if (li >= lines.length) { setTimeout(() => caret.remove(), 1600); return; } }
+        }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }, delay);
+    const io = new IntersectionObserver(en => {
+      if (!en.some(x => x.isIntersecting)) return; io.disconnect();
+      cols.forEach((lines, k) => typeCol(lines, k * 380));
+    }, { threshold: 0.35 });
+    io.observe(box);
+  }
+
   /* ---------- project glow follows how much of the card is on screen ---------- */
   function initBeams() {
     const arts = $$('[data-proj]', root); if (!arts.length) return;
@@ -153,15 +228,29 @@
   }
 
   /* ---------- live GitHub numbers ---------- */
+  // GitHub allows 60 unauthenticated calls per hour per IP (an office network shares one), so answers are cached
+  // for 6 hours and only fetched when the Open source section comes near the screen
+  const GH_KEY = 'dp-gh-v1', GH_TTL = 6 * 3600 * 1000;
   async function loadGitHub() {
     const put = (k, v) => $$('[data-gh="' + k + '"]').forEach(el => { el.textContent = v; });
     const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '…';
+    const show = (gw, rag, at) => {
+      if (gw) { put('gw-stars', gw.stars); put('gw-pushed', 'pushed ' + fmtDate(gw.pushed)); }
+      if (rag) { put('rag-stars', rag.stars); put('rag-pushed', 'pushed ' + fmtDate(rag.pushed)); }
+      put('updated', new Date(at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    };
+    try { const c = JSON.parse(localStorage.getItem(GH_KEY) || 'null'); if (c && Date.now() - c.at < GH_TTL) { show(c.gw, c.rag, c.at); return; } } catch (e) { /* storage blocked */ }
     try {
-      const [gw, rag] = await Promise.all(['llm-gateway', 'nocturne-RAG'].map(r => fetch('https://api.github.com/repos/Di-ivyanshu/' + r).then(x => x.ok ? x.json() : null)));
-      if (gw) { put('gw-stars', gw.stargazers_count); put('gw-pushed', 'pushed ' + fmtDate(gw.pushed_at)); }
-      if (rag) { put('rag-stars', rag.stargazers_count); put('rag-pushed', 'pushed ' + fmtDate(rag.pushed_at)); }
-      put('updated', new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      const pick = j => j ? { stars: j.stargazers_count, pushed: j.pushed_at } : null;
+      const [gw, rag] = await Promise.all(['llm-gateway', 'nocturne-RAG'].map(r => fetch('https://api.github.com/repos/Di-ivyanshu/' + r).then(x => x.ok ? x.json() : null).then(pick)));
+      const at = Date.now(); show(gw, rag, at);
+      if (gw && rag) { try { localStorage.setItem(GH_KEY, JSON.stringify({ gw, rag, at })); } catch (e) { /* storage blocked */ } }
     } catch (e) { /* offline: keep placeholders */ }
+  }
+  function scheduleGitHub() {
+    const oss = document.getElementById('oss'); if (!oss) return;
+    const io = new IntersectionObserver(en => { if (en.some(x => x.isIntersecting)) { io.disconnect(); loadGitHub(); } }, { rootMargin: '600px 0px' });
+    io.observe(oss);
   }
 
   /* ---------- contact form (FormSubmit relay, email fallback) ---------- */
@@ -272,9 +361,12 @@
     // needed for the first screen: the name, the stat figures, and the controls
     initName(); initStats(); initMenu(); initCases(); initForm(); initVideos(); initSpotlight();
     // below-the-fold motion (reveal/parallax/ring/tilt, word split, glows) waits until after the first paint
-    requestAnimationFrame(() => setTimeout(() => { initStatement(); setTimeout(() => { initHorizon(); initBeams(); initFX(); }, 0); }, 0));
+    requestAnimationFrame(() => setTimeout(() => {
+      initStatement(); initTyping();
+      setTimeout(() => { initHorizon(); initWorkTitle(); initBeams(); initFX(); }, 0);
+    }, 0));
     afterLoad(loadHeroVideo, isTouch ? 800 : 200);
-    afterLoad(loadGitHub, 300);
+    afterLoad(scheduleGitHub, 0);
     scheduleThree();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
