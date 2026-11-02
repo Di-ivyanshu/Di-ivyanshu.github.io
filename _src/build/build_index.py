@@ -91,12 +91,12 @@ def main():
     body = re.sub(r'ref="\{\{ (\w+)Ref \}\}"', r'data-ref="\1"', body)
 
     # hero: poster <picture> under the two (lazy) video copies
-    poster = ('<picture><source media="(orientation: portrait)" srcset="assets/hero-poster-540.webp" width="540" height="960">'
-              '<img data-hero-poster src="assets/hero-poster-1280.webp" width="1280" height="720" alt="" fetchpriority="high" decoding="async" '
-              'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.8;filter:brightness(.5)"></picture>')
+    poster = ('<picture><source media="(orientation: portrait)" srcset="assets/dune-poster-540.webp" width="540" height="960">'
+              '<img data-hero-poster src="assets/dune-poster-1280.webp" width="1280" height="720" alt="" fetchpriority="high" decoding="async" '
+              'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:.8;filter:brightness(.62)"></picture>')
     body = sub1(r'(<div style="position:absolute;inset:0;overflow:hidden;z-index:-1">)(<video data-ref="heroVideo")', r'\1' + poster + r'\2', body)
     body = sub1(r'src="\{\{ heroVideo \}\}" autoplay="" muted="" loop="" playsinline=""',
-                'data-src="assets/hero-1280.mp4" data-src-portrait="assets/hero-540p.mp4" autoplay muted loop playsinline preload="none" aria-hidden="true"',
+                'data-src="assets/dune-1280.mp4" data-src-portrait="assets/dune-540p.mp4" autoplay muted loop playsinline preload="none" aria-hidden="true"',
                 body, count=2)
 
     # project screenshots: responsive sources + intrinsic size (CSS keeps the 16:9 crop)

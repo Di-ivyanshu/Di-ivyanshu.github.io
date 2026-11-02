@@ -77,20 +77,22 @@
     cards.forEach(c => c.addEventListener('click', () => set(open === c.dataset.caseCard ? null : c.dataset.caseCard)));
   }
 
-  /* ---------- statement: words rise in one by one ---------- */
+  /* ---------- statement: words light up as the paragraph scrolls through the screen ---------- */
   function initStatement() {
     const p = $('[data-statement]', root); if (!p || p.dataset.split || reduced) return; p.dataset.split = '1';
-    let i = 0;
+    let i = 0, last = null;
     const walk = node => {
       [...node.childNodes].forEach(ch => {
         if (ch.nodeType === 3) {
           const frag = document.createDocumentFragment();
           ch.textContent.split(/(\s+)/).forEach(tok => {
             if (!tok) return;
-            if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); return; }
-            const s = document.createElement('span'); s.textContent = tok; s.dataset.w = i++;
-            if (ch.parentElement.closest('em')) s.dataset.em = '1';
-            s.style.cssText = 'display:inline-block;opacity:0;will-change:transform,opacity'; frag.appendChild(s);
+            if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); last = null; return; }
+            // punctuation right after a word ("talk." / "meeting,") stays glued to it, so a line never starts with it
+            const m = /^[.,;:!?…’”)\]]+/.exec(tok);
+            if (m && last) { last.textContent += m[0]; tok = tok.slice(m[0].length); if (!tok) return; }
+            const s = document.createElement('span'); s.textContent = tok; s.dataset.w = i++; s.style.display = 'inline-block';
+            frag.appendChild(s); last = s;
           });
           node.replaceChild(frag, ch);
         } else if (ch.nodeType === 1) walk(ch);
@@ -98,12 +100,49 @@
     };
     walk(p);
     const words = $$('[data-w]', p);
-    const io = new IntersectionObserver(en => {
-      if (!en[0].isIntersecting) return; io.disconnect();
-      words.forEach(w => { const d = (+w.dataset.w) * 55 + (w.dataset.em ? 260 : 0); w.style.animation = 'wordIn .7s cubic-bezier(.22,1,.36,1) ' + d + 'ms forwards'; });
-      setTimeout(() => words.forEach(w => { w.style.willChange = 'auto'; }), words.length * 55 + 1200);
-    }, { threshold: 0.35 });
-    io.observe(p);
+    let lit = -1, queued = false;
+    const update = () => {
+      queued = false;
+      const r = p.getBoundingClientRect(), vh = innerHeight, start = vh * 0.85, end = vh * 0.4;
+      // 0 when the paragraph's top reaches 85% of the screen, 1 when its bottom reaches 40%
+      const prog = Math.min(1, Math.max(0, (start - r.top) / Math.max(1, start - end + r.height)));
+      const n = Math.round(prog * words.length); if (n === lit) return; lit = n;
+      words.forEach((w, k) => w.classList.toggle('on', k < n));
+    };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    new IntersectionObserver(en => {
+      if (en[0].isIntersecting) addEventListener('scroll', onScroll, { passive: true }); else removeEventListener('scroll', onScroll);
+      update();
+    }, { rootMargin: '25% 0px' }).observe(p);
+    update();
+  }
+
+  /* ---------- horizon: the sun sets, the dunes drift, "Work" rises from behind them ---------- */
+  function initHorizon() {
+    const band = $('[data-horizon]', root); if (!band || reduced) return;   // reduced motion: the static composition
+    const sun = $('[data-h-sun]', band), title = $('[data-h-title]', band);
+    const dunes = [1, 2, 3].map(k => $('[data-h-dune="' + k + '"]', band));
+    const lerp = (a, b, t) => a + (b - a) * t, ease = t => 1 - Math.pow(1 - t, 3);
+    // [start, end] offsets as a fraction of the band height (front, middle, back)
+    const travel = [[0.06, 0], [0.16, -0.01], [0.10, -0.03]];
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const r = band.getBoundingClientRect(), vh = innerHeight, H = r.height;
+      const p = Math.min(1, Math.max(0, (vh - r.top) / (vh + H * 0.35)));   // 0: band enters at the bottom; 1: well past the top
+      const rise = ease(Math.min(1, p / 0.62));
+      title.style.transform = 'translate3d(0,' + ((1 - rise) * H * 0.42).toFixed(1) + 'px,0)';
+      title.style.opacity = (0.15 + 0.85 * rise).toFixed(3);
+      sun.style.transform = 'translate3d(-50%,' + (lerp(-0.16, 0.22, p) * H).toFixed(1) + 'px,0)';
+      dunes.forEach((d, k) => { if (d) d.style.transform = 'translate3d(0,' + (lerp(travel[k][0], travel[k][1], p) * H).toFixed(1) + 'px,0)'; });
+    };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    new IntersectionObserver(en => {
+      if (en[0].isIntersecting) addEventListener('scroll', onScroll, { passive: true }); else removeEventListener('scroll', onScroll);
+      onScroll();
+    }, { rootMargin: '10% 0px' }).observe(band);
+    addEventListener('resize', onScroll, { passive: true });
+    update();
   }
 
   /* ---------- project glow follows how much of the card is on screen ---------- */
@@ -233,7 +272,7 @@
     // needed for the first screen: the name, the stat figures, and the controls
     initName(); initStats(); initMenu(); initCases(); initForm(); initVideos(); initSpotlight();
     // below-the-fold motion (reveal/parallax/ring/tilt, word split, glows) waits until after the first paint
-    requestAnimationFrame(() => setTimeout(() => { initStatement(); setTimeout(() => { initBeams(); initFX(); }, 0); }, 0));
+    requestAnimationFrame(() => setTimeout(() => { initStatement(); setTimeout(() => { initHorizon(); initBeams(); initFX(); }, 0); }, 0));
     afterLoad(loadHeroVideo, isTouch ? 800 : 200);
     afterLoad(loadGitHub, 300);
     scheduleThree();

@@ -77,7 +77,7 @@
     const PW = 1.15, PH = 2.5;
     const targetsP = [fitPortrait(heroShape, PW, PH * 0.7), toPortrait(ribbon, PW, PH, 1.7), fitPortrait(torus, PW, PH), toPortrait(graph, PW, PH, 1), fitPortrait(sphere, PW, PH), toPortrait(helix, PW, PH, 1.4), fromPts(sampleText(['SAY', 'HI'], 960, 640), N, 1.15, 0, 0, 0.06)];
     let targets = targetsL, portraitMode = false;
-    const alphas = [opts.heroAlpha == null ? 0.95 : opts.heroAlpha, 0.5, 0.28, 0.32, 0.3, 0.42, 0.9].map(a => isTouch ? Math.min(1, a * 1.25) : a);
+    const alphas = [opts.heroAlpha == null ? 0.95 : opts.heroAlpha, 0.3, 0.28, 0.32, 0.3, 0.42, 0.9].map(a => isTouch ? Math.min(1, a * 1.25) : a);
     // how far each section's dots lean toward the accent colour (hero grey → work/oss coloured → contact back to ink)
     const tints = [0.0, 0.35, 0.75, 0.55, 0.9, 0.6, 0.2];
     const scatter = shapeScatter(N);

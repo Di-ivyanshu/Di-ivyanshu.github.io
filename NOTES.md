@@ -14,7 +14,10 @@ sh _src/build/build.sh          # needs Python 3 + esbuild (npx)
 - `_src/js/app.js` — page logic (plain-JS port of the old dc/React component)
 - `_src/js/name-play.js`, `_src/js/fx.js` — name animation and effects; bundled into `assets/js/site.min.js`
 - three.js (`assets/js/vendor/three.min.js`) loads only after first interaction (desktop: also after idle)
-- hero: `assets/hero-poster-*.webp` is the first paint; `hero-1280.mp4` / `hero-540p.mp4` load after the page
+- hero: `assets/dune-poster-*.webp` is the first paint; `dune-1280.mp4` / `dune-540p.mp4` (sunset grade of the
+  original dune loop) load after the page
+- sunset palette lives in the template's CSS tokens (`--accent:#ff7a3d`); the Work "horizon" band is SVG + CSS,
+  animated by `initHorizon()` in `_src/js/app.js`
 
 SEO files at the root: `robots.txt`, `sitemap.xml` (update `lastmod` when content changes),
 `site.webmanifest`, `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon-512.png`.

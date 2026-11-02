@@ -23,7 +23,7 @@
 
   function botSVG(frame, px) {
     const rows = frame === 'wave' ? BOT_WAVE : BOT; const s = px || 5;
-    const col = { b: '#ece9e1', e: '#0b0b0e', a: '#7b8cff', w: '#ece9e1' };
+    const col = { b: '#ece9e1', e: '#0b0b0e', a: '#ff7a3d', w: '#ece9e1' };
     let out = `<rect x="${s}" y="${2 * s}" width="${10 * s}" height="${7 * s}" fill="#0b0b0e"/>`;
     rows.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') out += `<rect x="${x * s}" y="${y * s}" width="${s}" height="${s}" fill="${col[c]}"/>`; }));
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${12 * s}" height="${12 * s}" viewBox="0 0 ${12 * s} ${12 * s}" shape-rendering="crispEdges" style="display:block">${out}</svg>`;
