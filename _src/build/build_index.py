@@ -233,6 +233,11 @@ def main():
                 'author': {'@id': SITE + '#person'},
             },
             {
+                '@type': 'CreativeWork', 'name': 'CHIRON — a scroll-driven film',
+                'description': 'Eight-chapter scroll-driven film about the Bugatti Chiron: 540 WebP frames scrubbed on a canvas by scroll position, followed by a brand page.',
+                'url': SITE + 'chiron-scroll/', 'author': {'@id': SITE + '#person'},
+            },
+            {
                 '@type': 'SoftwareSourceCode', 'name': 'nocturne-RAG',
                 'description': 'Self-correcting RAG over private documents: hybrid BGE + BM25 retrieval, cross-encoder re-ranking, critic agent, citations to file and page, evaluation harness.',
                 'codeRepository': 'https://github.com/Di-ivyanshu/nocturne-RAG', 'programmingLanguage': 'Python',
