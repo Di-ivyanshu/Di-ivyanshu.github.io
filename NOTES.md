@@ -23,6 +23,9 @@ sh _src/build/build.sh          # needs Python 3 + esbuild (npx)
   frames (`00.webp`…`89.webp`, every 6th frame of https://di-ivyanshu.github.io/chiron-scroll/frames/), scrubbed on a
   canvas by `initLab()`. Frames are fetched only when the visitor gets near the section; reduced motion and
   data saver get the poster frame (`l/49.webp`) instead
+- before the film, the background dots become CHIRON: `assets/lab/chiron-dots.bin` holds 7 dot keyframes
+  (6000 x/y Int16 pairs each, 1/8000 units) sampled from the film's turntable frames 0-11 (edges + highlights),
+  chained with sliced optimal transport so each dot moves the short way between views; `fx.js` blends them by scroll
 
 SEO files at the root: `robots.txt`, `sitemap.xml` (update `lastmod` when content changes),
 `site.webmanifest`, `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon-512.png`.
