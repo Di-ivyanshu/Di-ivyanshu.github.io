@@ -74,7 +74,7 @@
     const ribbon = shapeRibbon(N), torus = shapeTorus(N, 0), graph = shapeGraph(N), helix = shapeHelix(N), sphere = shapeSphere(N, 0);
     // sections: hero, statement, work, open source, lab (the dots become CHIRON), lab film (the car waits behind it), skills, contact
     const CAR = 4;
-    const targetsL = [heroShape, ribbon, torus, graph, sphere, sphere, helix, byeTxt];   // CAR slots: a sphere until the dot keyframes load
+    const targetsL = [heroShape, ribbon, torus, graph, sphere, sphere, helix, byeTxt];   // CAR slots: a sphere until the CHIRON dots load
     // portrait set: visible column at camera z=4.2 is ~1.2 wide × 2.6 tall — vertical ribbon/helix/graph, torus filling the width, "SAY HI" on two lines
     const PW = 1.15, PH = 2.5, sphereP = fitPortrait(sphere, PW, PH);
     const targetsP = [fitPortrait(heroShape, PW, PH * 0.7), toPortrait(ribbon, PW, PH, 1.7), fitPortrait(torus, PW, PH), toPortrait(graph, PW, PH, 1), sphereP, sphereP, toPortrait(helix, PW, PH, 1.4), fromPts(sampleText(['SAY', 'HI'], 960, 640), N, 1.15, 0, 0, 0.06)];
@@ -92,13 +92,13 @@
     const uniforms = {
       uIntro: { value: 0 }, uMix: { value: 0 }, uTime: { value: 0 }, uAlpha: { value: 1 }, uMouse: { value: new THREE.Vector3(9, 9, 0) },
       uColor: { value: new THREE.Color(cssVar('--ink') || '#111') }, uAccent: { value: new THREE.Color(cssVar('--accent') || '#2f5cff') },
-      uPx: { value: renderer.getPixelRatio() }, uSize: { value: 1 }, uTint: { value: 0 }, uPushK: { value: 1 }
+      uPx: { value: renderer.getPixelRatio() }, uSize: { value: 1 }, uTint: { value: 0 }, uPushK: { value: 1 }, uFog: { value: 0 }, uCamZ: { value: 2.6 }
     };
     const mat = new THREE.ShaderMaterial({
       uniforms, transparent: true, depthWrite: false,
       vertexShader: `
         attribute vec3 aB, aScatter; attribute float aRnd;
-        uniform float uIntro, uMix, uTime, uPx, uSize, uPushK; uniform vec3 uMouse;
+        uniform float uIntro, uMix, uTime, uPx, uSize, uPushK, uFog, uCamZ; uniform vec3 uMouse;
         varying float vA; varying float vR;
         void main(){
           float m = smoothstep(0.0, 1.0, clamp(uMix * 1.3 - aRnd * 0.3, 0.0, 1.0));
@@ -114,7 +114,7 @@
           vec4 mv = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mv;
           gl_PointSize = (1.4 + aRnd * 1.2 + push * 6.0) * uPx * uSize * (2.6 / -mv.z);
-          vA = 0.55 + 0.45 * p; vR = push;
+          vA = (0.55 + 0.45 * p) * (1.0 - uFog * 0.7 * smoothstep(-0.22, 0.3, -mv.z - uCamZ)); vR = push;
         }`,
       fragmentShader: `
         precision mediump float; uniform vec3 uColor, uAccent; uniform float uAlpha, uTint; varying float vA; varying float vR;
@@ -126,36 +126,21 @@
     });
     const points = new THREE.Points(geo, mat); scene.add(points);
     let seg = -1;
-    // CHIRON: dots sampled from the film's turntable frames (front three-quarter → side → rear three-quarter),
-    // chained so each dot travels the short way between views; Lab's scroll picks the in-between
-    let carKF = null, carAt = -1;
-    const writeCar = p => {
-      if (!carKF || Math.abs(p - carAt) < 0.0004) return; carAt = p;
-      const kf = portraitMode ? carKF.P : carKF.L, f = p * (kf.length - 1), k = Math.min(kf.length - 2, Math.floor(f)), t = f - k, A = kf[k], B = kf[k + 1], o = attrA.array;
-      for (let i = 0; i < o.length; i++) o[i] = A[i] + (B[i] - A[i]) * t;
-      attrA.needsUpdate = true;
-    };
-    fetch('assets/lab/chiron-dots.bin').then(r => (r.ok ? r.arrayBuffer() : null)).then(buf => {
+    // CHIRON as a 3D dot model (assets/lab/chiron-3d.bin, built by _src/tools/chiron-dots-sampler.html from the film's
+    // side frame: the real profile and flank drawing on both sides, plus roof, horseshoe nose and light-bar tail)
+    fetch('assets/lab/chiron-3d.bin').then(r => (r.ok ? r.arrayBuffer() : null)).then(buf => {
       if (!buf) return;
-      const q = new Int16Array(buf), N0 = 6000, K = Math.round(q.length / (N0 * 2)); if (K < 2) return;
-      const L = [], P = [];   // stored at 1/8000 units, read at 1/10000: 0.8 of the sampled size, denser and crisper
-      let minX = 1e9, maxX = -1e9;
-      for (let k = 0; k < K; k++) {
-        const a = new Float32Array(N * 3);
-        for (let i = 0; i < N; i++) { const j = (k * N0 + Math.floor(i * N0 / N)) * 2; a[i*3] = q[j] / 10000; a[i*3+1] = q[j+1] / 10000; a[i*3+2] = (((i * 7919) % 1000) / 1000 - 0.5) * 0.05; if (a[i*3] < minX) minX = a[i*3]; if (a[i*3] > maxX) maxX = a[i*3]; }
-        L.push(a);
-      }
-      const sP = (PW * 1.05) / ((maxX - minX) || 1);   // one scale for every view, so the car keeps its size as it turns
-      L.forEach(a => { const b = new Float32Array(a.length); for (let i = 0; i < a.length; i++) b[i] = a[i] * sP; P.push(b); });
-      carKF = { L, P };
-      targetsL[CAR] = L[0]; targetsL[CAR + 1] = L[K - 1]; targetsP[CAR] = P[0]; targetsP[CAR + 1] = P[K - 1];
+      const q = new Int16Array(buf), N0 = Math.floor(q.length / 3); if (N0 < 1000) return;
+      const car = new Float32Array(N * 3), carP = new Float32Array(N * 3), sP = (PW * 1.05) / 2.06;   // landscape at 0.82 of the model (denser dots); portrait: the turntable ring fits the width
+      for (let i = 0; i < N; i++) { const j = Math.floor(i * N0 / N) * 3; for (let k = 0; k < 3; k++) { car[i*3+k] = q[j+k] / 12200; carP[i*3+k] = q[j+k] / 10000 * sP; } }
+      targetsL[CAR] = targetsL[CAR + 1] = car; targetsP[CAR] = targetsP[CAR + 1] = carP;
       const s0 = seg; seg = -1; setSeg(Math.max(0, s0));
     }).catch(() => { /* the sphere stays */ });
-    function setSeg(i) { if (i === seg) return; seg = i; attrA.array.set(targets[i]); attrB.array.set(targets[Math.min(i+1, targets.length-1)]); attrA.needsUpdate = true; attrB.needsUpdate = true; carAt = -1; }   // frame() writes the car's in-between view before the next render
+    function setSeg(i) { if (i === seg) return; seg = i; attrA.array.set(targets[i]); attrB.array.set(targets[Math.min(i+1, targets.length-1)]); attrA.needsUpdate = true; attrB.needsUpdate = true; }
     setSeg(0);
-    const st = { rotX: 0, rotY: 0, tRotX: 0, tRotY: 0, drag: null, vel: 0, start: performance.now(), mix: 0, alpha: 1, tint: 0, spin: null, tilt: 0, car: 0 };
+    const st = { rotX: 0, rotY: 0, tRotX: 0, tRotY: 0, drag: null, vel: 0, start: performance.now(), mix: 0, alpha: 1, tint: 0, spin: null, tilt: 0, inCar: false };
     function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
-      const portrait = w < h; camera.position.z = w < 700 ? 4.2 : 2.6; uniforms.uSize.value = portrait ? 1.15 : 1;
+      const portrait = w < h; camera.position.z = w < 700 ? 4.2 : 2.6; uniforms.uCamZ.value = camera.position.z; uniforms.uSize.value = portrait ? 1.15 : 1;
       if (portrait !== portraitMode) { portraitMode = portrait; targets = portrait ? targetsP : targetsL; const s = seg; seg = -1; setSeg(Math.max(0, s)); } }
     resize(); addEventListener('resize', debounce(resize, 100));
     const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), hit = new THREE.Vector3();
@@ -197,20 +182,25 @@
       st.mix += (tMix - st.mix) * 0.08; st.alpha += (tAlpha - st.alpha) * 0.08; st.tint += (tTint - st.tint) * 0.05;
       if (!st.drag) { st.vel *= 0.94; st.tRotY += st.vel; }
       st.rotY += (st.tRotY - st.rotY) * 0.06; st.rotX += (st.tRotX - st.rotX) * 0.06;
-      // CHIRON turns with the scroll by moving through its views (the views already carry the perspective),
-      // so the car itself is not spun, swayed by the mouse, or pushed apart much by the cursor
+      // CHIRON turns on its turntable with the scroll: three-quarter front → side → three-quarter rear (about 190°),
+      // seen from a little above; the mouse only sways it a little and pushes its dots apart less
       const carW = seg === CAR - 1 ? st.mix : seg === CAR ? 1 : seg === CAR + 1 ? 1 - st.mix : 0;
-      if (seg === CAR) {
-        st.car += ((reduced ? 0 : Math.min(1, local / 0.8)) - st.car) * 0.1;
-        writeCar(st.car);   // the A buffer is the car; no morph toward B inside Lab (uMix 0 below)
+      const wrap = v => v - 6.2832 * Math.round(v / 6.2832);
+      let goal;
+      if ((seg === CAR - 1 && tMix > 0) || seg === CAR || seg === CAR + 1) {
+        goal = reduced ? 0.5 : seg === CAR - 1 ? 0.85 : seg === CAR ? 0.85 - 3.2 * Math.min(1, local / 0.9) : -2.35 - 0.25 * local;
+        if (!st.inCar) { st.inCar = true; if (st.spin != null) st.spin = goal + wrap(st.spin - goal); }   // join the turn from the nearest angle
+      } else {
+        st.inCar = false;
+        goal = (seg > 0 && seg < targets.length - 1) ? scrollRot + t * 0.05 : 0;
+        if (st.spin != null) goal = st.spin + wrap(goal - st.spin);   // aim for the nearest turn, so a shape never unwinds
       }
-      let goal = (seg > 0 && seg < targets.length - 1 && carW < 0.01) ? scrollRot + t * 0.05 : 0;
       if (st.spin == null) st.spin = goal;
-      goal += 6.2832 * Math.round((st.spin - goal) / 6.2832);   // aim for the nearest turn, so a shape never unwinds
-      st.spin += (goal - st.spin) * 0.07;
-      uniforms.uPushK.value = 1 - 0.7 * carW;
+      st.spin += (goal - st.spin) * 0.08;
+      st.tilt += (carW * 0.16 - st.tilt) * 0.06;
+      uniforms.uPushK.value = 1 - 0.7 * carW; uniforms.uFog.value = carW;
       uniforms.uSize.value = (portraitMode ? 1.15 : 1) * (1 + 0.3 * carW);
-      points.rotation.set(st.rotX * (1 - carW), st.rotY * (1 - carW) + st.spin, 0);
+      points.rotation.set(st.rotX * (1 - 0.6 * carW) + st.tilt, st.rotY * (1 - 0.6 * carW) + st.spin, 0);
       uniforms.uMix.value = seg === CAR ? 0 : st.mix; uniforms.uTime.value = t; uniforms.uAlpha.value = st.alpha; uniforms.uTint.value = st.tint;
       renderer.render(scene, camera); requestAnimationFrame(frame);
     }

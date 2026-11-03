@@ -2,77 +2,96 @@
 <style>body{margin:0;background:#0b0b0e}canvas{display:block}</style>
 <canvas id="c" width="1440" height="900"></canvas>
 <script>
-// Turns CHIRON's turntable frames into dot keyframes: importance-sample edges + highlights,
-// then chain the keyframes with sliced optimal transport so dot i moves the shortest way from frame to frame.
-const N = 6000, FRAMES = (new URLSearchParams(location.search).get('f') || '0,2,4,6,8,10').split(',').map(Number), SCALE = 2.6 / 1600, CX = 800, CY = 470;
-const P = new URLSearchParams(location.search);
+// CHIRON as a 3D dot model: the film's pure side frame gives the real profile and the flank drawing
+// (C-line, windows, door, wheels, intakes), wrapped onto both flanks of a body with the Chiron's
+// proportions; roof, nose (horseshoe grille, four-LED lamps) and tail (full-width light bar) are added
+// around that profile. Output: 6000 x/y/z Int16 at 1/10000 units, shuffled so any stride subset works.
+const N = 6000, P = new URLSearchParams(location.search);
 function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
-const R = rng(11);
-function load(src) { return new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; }); }
-function score(img) {
-  const W = 800, H = 450, c = document.createElement('canvas'); c.width = W; c.height = H;
+const R = rng(5);
+const load = src => new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = src; });
+// pixel facts read off frame 06 (1600x900): ground line, wheel centres and radius, lamp heights
+const GROUND = 640, WHEELS = [[430, 535], [1215, 535]], WR = 106, BELT_PX = 392, HEAD_PX = 455, TAIL_PX = 425;
+async function main() {
+  const img = await load('frames/src_06.webp');
+  const W = 1600, H = 900, c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
   const d = x.getImageData(0, 0, W, H).data, L = new Float32Array(W * H), V = new Float32Array(W * H);
-  // edges from luminance; highlights from the brightest channel, so the red tail light bar counts
-  for (let i = 0; i < W * H; i++) { L[i] = (0.2126 * d[i*4] + 0.7152 * d[i*4+1] + 0.0722 * d[i*4+2]) / 255; V[i] = Math.max(L[i], 0.85 * d[i*4] / 255 * (d[i*4] > 1.6 * d[i*4+1] ? 1 : 0)); }
-  const B = new Float32Array(W * H);   // 3x3 blur
+  for (let i = 0; i < W * H; i++) { L[i] = (0.2126 * d[i*4] + 0.7152 * d[i*4+1] + 0.0722 * d[i*4+2]) / 255; V[i] = Math.max(L[i], d[i*4] > 1.6 * d[i*4+1] ? 0.85 * d[i*4] / 255 : 0); }
+  // profile: first row from the top where the body starts (blue paint or highlight), per column
+  const top = new Float32Array(W).fill(NaN);
+  for (let xx = 0; xx < W; xx++) for (let y = 200; y < GROUND - 60; y++) { const i = y * W + xx; if (d[i*4+2] > 46 || L[i] > 0.12) { top[xx] = y; break; } }
+  let x0 = 0, x1 = W - 1; while (x0 < W && !(top[x0] < 560)) x0++; while (x1 > 0 && !(top[x1] < 560)) x1--;
+  const topS = new Float32Array(W); for (let xx = x0; xx <= x1; xx++) { let s = 0, n = 0; for (let k = -6; k <= 6; k++) { const v = top[Math.min(x1, Math.max(x0, xx + k))]; if (v === v) { s += v; n++; } } topS[xx] = s / n; }
+  // edge + highlight score (blurred luminance, Sobel)
+  const B = new Float32Array(W * H);
   for (let y = 1; y < H - 1; y++) for (let xx = 1; xx < W - 1; xx++) { let s = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) s += L[(y + j) * W + xx + i]; B[y * W + xx] = s / 9; }
-  const Sc = new Float32Array(W * H);
-  const ew = +(P.get('ew') || 3.2), lw = +(P.get('lw') || 1.6), lt = +(P.get('lt') || 0.2);
-  for (let y = 1; y < H - 1; y++) for (let xx = 1; xx < W - 1; xx++) {
-    const g = k => B[k];
-    const i = y * W + xx;
+  const Sc = new Float32Array(W * H); let tot = 0;
+  for (let y = 2; y < GROUND - 3; y++) for (let xx = Math.max(2, x0); xx <= Math.min(W - 3, x1); xx++) {
+    if (y < topS[xx] - 3) continue;
+    const i = y * W + xx, g = k => B[k];
     const gx = g(i - W + 1) + 2 * g(i + 1) + g(i + W + 1) - g(i - W - 1) - 2 * g(i - 1) - g(i + W - 1);
     const gy = g(i + W - 1) + 2 * g(i + W) + g(i + W + 1) - g(i - W - 1) - 2 * g(i - W) - g(i - W + 1);
-    const e = Math.hypot(gx, gy), hl = Math.max(0, V[i] - lt);
-    let s = ew * Math.pow(e, +(P.get("ex") || 1.1)) + lw * Math.pow(hl, 1.4);
-    // keep the car and the podium rim: soft box mask (in 1600x900 pixels), the podium face below the wheels weakened
-    const X = xx * 2, Y = y * 2, f = (v, lo, hi, k) => Math.min(1, Math.max(0, (v - lo) / k)) * Math.min(1, Math.max(0, (hi - v) / k));
-    s *= f(X, 110, 1500, 40) * f(Y, 230, 730, 30) * (Y > 655 ? +(P.get('pod') || 0.3) : 1);
-    if (xx < 4 || y < 4 || xx > W - 5 || y > H - 5) s = 0;
-    if (s < +(P.get('th') || 0.06)) s = 0;
-    Sc[i] = s;
+    let s = +(P.get('ew') || 6) * Math.pow(Math.hypot(gx, gy), 1.5) + 1.4 * Math.pow(Math.max(0, V[i] - 0.2), 1.4) + +(P.get('cw') || 8) * Math.max(0, V[i] - +(P.get('ct') || 0.62));   // chrome (C-line, sill strip) counts extra
+    if (s < 0.05) s = 0; Sc[i] = s; tot += s;
   }
-  return { Sc, W, H };
-}
-function sample({ Sc, W, H }) {
+  // world: length 1.6, ground at y = 0, front (left in the frame) at -x
+  const s = 1.6 / (x1 - x0), cx = (x0 + x1) / 2;
+  const X = px => (px - cx) * s, Y = py => (GROUND - py) * s;
+  const topY = X0 => { const px = Math.min(x1, Math.max(x0, Math.round(X0 / s + cx))); return Y(topS[px]); };
+  const HALF = 0.36, Hroof = Math.max(...[...topS.slice(x0, x1 + 1)].map(v => Y(v))), Yb = Y(BELT_PX);
+  const Wx = X0 => { const xn = Math.min(1, Math.abs(X0) / 0.8); return HALF * (1 - 0.22 * Math.pow(xn, 4)); };
+  const hw = (X0, Y0) => { const w = Wx(X0), t = topY(X0);
+    if (Y0 > Yb && t > Yb + 0.02) return w * 0.92 * (1 - 0.42 * Math.min(1, (Y0 - Yb) / (t - Yb)));
+    return w * (0.9 + 0.1 * Math.sin(Math.PI * Math.min(1, Math.max(0, Y0 / Yb)))); };
+  const pts = []; const put = (a, b, z) => pts.push([a, b, z]);
+  const inWheel = (px, py) => WHEELS.some(([wx, wy]) => (px - wx) ** 2 + (py - wy) ** 2 < (WR + 4) ** 2);
+  // 1. flank drawing from the side frame, mirrored onto both flanks
   const cdf = new Float64Array(W * H); let t = 0; for (let i = 0; i < W * H; i++) { t += Sc[i]; cdf[i] = t; }
-  const pts = new Float32Array(N * 2);
-  for (let n = 0; n < N; n++) {
+  const FL = +(P.get('fl') || 1450);
+  for (let n = 0; n < FL; n++) {
     const r = R() * t; let lo = 0, hi = W * H - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (cdf[m] < r) lo = m + 1; else hi = m; }
-    const px = (lo % W + R()) * 2, py = (Math.floor(lo / W) + R()) * 2;   // back to 1600x900 pixels
-    pts[n*2] = (px - CX) * SCALE; pts[n*2+1] = -(py - CY) * SCALE;
+    const px = lo % W + R(), py = Math.floor(lo / W) + R(), a = X(px), b = Y(py);
+    const z = inWheel(px, py) ? Wx(a) - 0.025 : hw(a, b) + 0.004;
+    put(a, b, z); put(a, b, -z);
   }
-  return pts;
-}
-// sliced optimal transport: move A's dots until they are distributed like B, keeping each dot's identity
-function slicedOT(A, B, iters) {
-  const a = Float32Array.from(A), pa = new Float32Array(N), pb = new Float32Array(N), ia = new Uint32Array(N), ib = new Uint32Array(N);
-  for (let it = 0; it < iters; it++) {
-    const th = R() * Math.PI, dx = Math.cos(th), dy = Math.sin(th);
-    for (let i = 0; i < N; i++) { pa[i] = a[i*2] * dx + a[i*2+1] * dy; pb[i] = B[i*2] * dx + B[i*2+1] * dy; ia[i] = i; ib[i] = i; }
-    ia.sort((p, q) => pa[p] - pa[q]); ib.sort((p, q) => pb[p] - pb[q]);
-    for (let k = 0; k < N; k++) { const i = ia[k], m = pb[ib[k]] - pa[i]; a[i*2] += m * dx; a[i*2+1] += m * dy; }
-  }
-  return a;
-}
-async function main() {
-  const imgs = await Promise.all(FRAMES.map(f => load('frames/src_' + String(f).padStart(2, '0') + '.webp')));
-  const samples = imgs.map(im => sample(score(im)));
-  const kf = [samples[0]];
-  for (let k = 1; k < samples.length; k++) kf.push(slicedOT(kf[k - 1], samples[k], +(P.get('it') || 160)));
-  window.__kf = kf;
-  // preview: keyframes 0, 2, 5 and the half-way blend between 0 and 1
-  const c = document.getElementById('c'), ctx = c.getContext('2d'); ctx.fillStyle = '#0b0b0e'; ctx.fillRect(0, 0, 1440, 900);
-  const blend = (A, B, t) => A.map((v, i) => v + (B[i] - v) * t);
-  const L = kf.length - 1, views = [kf[0], blend(kf[1], kf[2], 0.5), kf[Math.round(L * 0.6)], kf[L]];
-  views.forEach((v, k) => {
-    const ox = (k % 2) * 720 + 360, oy = Math.floor(k / 2) * 450 + 225, s = 720 / 2.9;
+  const rnd = (lo, hi) => lo + R() * (hi - lo), jit = q => (R() - 0.5) * q;
+  // 2. tyre tread: the wheel's outer circle given its width
+  for (let n = 0; n < 340; n++) { const [wx, wy] = WHEELS[n % 2], ang = rnd(0, 6.283), sd = R() < 0.5 ? -1 : 1, a = X(wx + WR * Math.cos(ang)), b = Y(wy + WR * Math.sin(ang)); if (b < 0.005) continue; put(a, b, sd * (Wx(a) - rnd(0.03, 0.13))); }
+  // 3. roof, bonnet and deck across the width, shoulders denser
+  const xa = X(x0), xb = X(x1);
+  for (let n = 0; n < 1000; n++) { const a = rnd(xa + 0.02, xb - 0.02), u = n % 3 === 0 ? (R() < 0.5 ? -1 : 1) * rnd(0.86, 0.97) : rnd(-1, 1), b = topY(a); put(a, b - 0.03 * Math.pow(Math.abs(u), 4), u * hw(a, b) * 0.97); }
+  // 4. nose: horseshoe grille, four-LED lamps each side, the side intakes, a light fill; it rounds back at the corners
+  const noseX = z => xa + 0.09 * Math.pow(Math.abs(z) / HALF, 2), Yh = Y(HEAD_PX);
+  for (let n = 0; n < 200; n++) { const ang = rnd(-0.35, Math.PI + 0.35), b = 0.12 + 0.085 * Math.sin(ang), z = 0.075 * Math.cos(ang); put(noseX(z) - 0.004, b + jit(0.005), z + jit(0.005)); }
+  for (let n = 0; n < 60; n++) { const b = rnd(0.035, 0.12), sd = R() < 0.5 ? -1 : 1, z = sd * 0.075; put(noseX(z), b, z); }
+  for (let n = 0; n < 200; n++) { const k = n % 4, sd = (n >> 2) % 2 ? 1 : -1, z = sd * (0.15 + k * 0.042 + jit(0.014)); put(noseX(z) + 0.01, Yh + jit(0.016), z); }
+  for (let n = 0; n < 90; n++) { const sd = R() < 0.5 ? -1 : 1, ang = rnd(0, 6.283), z = sd * (0.24 + 0.06 * Math.cos(ang)), b = 0.09 + 0.045 * Math.sin(ang); put(noseX(z), b, z); }
+  for (let n = 0; n < 120; n++) { const z = rnd(-0.95, 0.95) * Wx(xa) , b = rnd(0.03, topY(xa + 0.03)); put(noseX(z) + 0.01, b, z); }
+  // 5. tail: the full-width light bar, deck edge, diffuser and the centre exhaust
+  const Yt = Y(TAIL_PX), tailX = z => xb - 0.05 * Math.pow(Math.abs(z) / HALF, 2);
+  for (let n = 0; n < 240; n++) { const z = rnd(-0.31, 0.31); put(tailX(z) + 0.004, Yt + jit(0.01), z); }
+  for (let n = 0; n < 90; n++) { const z = rnd(-0.32, 0.32); put(tailX(z), topY(xb - 0.02) - 0.01, z); }
+  for (let n = 0; n < 90; n++) { const z = rnd(-0.3, 0.3); put(tailX(z) - 0.02, 0.1 + jit(0.008), z); }
+  for (let n = 0; n < 50; n++) { const ang = rnd(0, 6.283); put(xb - 0.03, 0.13 + 0.03 * Math.sin(ang), 0.07 * Math.cos(ang)); }
+  for (let n = 0; n < 90; n++) { const z = rnd(-0.95, 0.95) * Wx(xb), b = rnd(0.06, topY(xb - 0.03)); put(tailX(z), b, z); }
+  // 6. turntable ring and a little of its floor
+  while (pts.length < N) { const ang = rnd(0, 6.283), r = R() < 0.72 ? 1.02 + jit(0.02) : rnd(0.25, 0.98); put(r * Math.cos(ang), 0, r * Math.sin(ang)); }
+  pts.length = N;
+  // centre vertically, shuffle
+  const mid = Hroof / 2; pts.forEach(p => { p[1] -= mid; });
+  for (let i = N - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  window.__info = { x0, x1, Hroof: +Hroof.toFixed(3), Yb: +Yb.toFixed(3), len: 1.6 };
+  // preview: four turns, the page's camera (fov 35, z 2.6) and a slight tilt
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d'); ctx.fillStyle = '#0b0b0e'; ctx.fillRect(0, 0, 1440, 900);
+  const views = (P.get('v') || '0.85,0,-1.2,-2.35').split(',').map(Number), tilt = +(P.get('t') || 0.16);
+  views.forEach((th, k) => {
+    const ox = (k % 2) * 720, oy = Math.floor(k / 2) * 450, f = 225 / Math.tan(17.5 * Math.PI / 180), cy = Math.cos(th), sy = Math.sin(th), cxx = Math.cos(tilt), sxx = Math.sin(tilt);
     ctx.fillStyle = 'rgba(255,122,61,.9)';
-    for (let i = 0; i < N; i++) { ctx.beginPath(); ctx.arc(ox + v[i*2] * s, oy - v[i*2+1] * s, 0.9 + (i % 7) / 6 * 0.6, 0, 6.283); ctx.fill(); }
+    pts.forEach(([a, b, z], i) => { const x1_ = a * cy + z * sy, z1 = -a * sy + z * cy, y2 = b * cxx - z1 * sxx, z2 = b * sxx + z1 * cxx, dd = 2.6 - z2;
+      ctx.beginPath(); ctx.arc(ox + 360 + x1_ * f / dd, oy + 225 - y2 * f / dd, (0.9 + (i % 7) / 6 * 0.6) * 2.6 / dd, 0, 6.283); ctx.fill(); });
   });
-  // export: Int16, x/y per dot per keyframe, 1/8000 units
-  const q = new Int16Array(kf.length * N * 2); kf.forEach((k, j) => { for (let i = 0; i < N * 2; i++) q[j * N * 2 + i] = Math.round(k[i] * 8000); });
+  const q = new Int16Array(N * 3); pts.forEach((p, i) => { q[i*3] = Math.round(p[0] * 10000); q[i*3+1] = Math.round(p[1] * 10000); q[i*3+2] = Math.round(p[2] * 10000); });
   let bin = ''; const u8 = new Uint8Array(q.buffer); for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
   window.__bin = btoa(bin);
   document.title = 'done';
