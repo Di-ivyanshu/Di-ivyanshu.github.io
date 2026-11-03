@@ -13,7 +13,8 @@
   const isTouch = matchMedia('(pointer: coarse)').matches;
   const saveData = !!(navigator.connection && navigator.connection.saveData);
   const root = ref('root') || document.body;
-  const SECTIONS = ['top', 'statement', 'work', 'oss', 'lab', 'skills', 'contact'];
+  // one particle shape per entry (fx.js): in Lab the dots become CHIRON, then the film rises over them
+  const SECTIONS = ['top', 'statement', 'work', 'oss', 'lab-dots', 'lab-film', 'skills', 'contact'];
 
   // run fn once the page has loaded and the main thread is idle
   function afterLoad(fn, delay) {
@@ -548,7 +549,7 @@
     const canvas = ref('hero'); if (!canvas || !window.PortfolioFX) return;
     const s = document.createElement('script'); s.src = 'assets/js/vendor/three.min.js'; s.async = true;
     s.onload = () => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
-      try { window.PortfolioFX.initHero(canvas, null, SECTIONS, { heroAlpha: 0.22 }); } catch (e) { /* no WebGL: the page is complete without it */ }
+      try { if (window.PortfolioFX.initHero(canvas, null, SECTIONS, { heroAlpha: 0.22 })) document.documentElement.classList.add('dots'); } catch (e) { /* no WebGL: the page is complete without it */ }
     });
     document.head.appendChild(s);
   }

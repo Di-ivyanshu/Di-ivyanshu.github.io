@@ -761,6 +761,9 @@ video{display:block}
 }
 @media (prefers-reduced-motion:reduce){[data-tw]{animation:none!important;opacity:.7}}
 /* ---- lab: a scroll film running inside the page ---- */
+/* room for the background dots to become CHIRON and turn with the scroll (only once the particle field runs) */
+.dots [data-lab-dots]{height:115vh}
+@media (max-width:760px){.dots [data-lab-dots]{height:95svh}}
 .js [data-lab-track]{height:300vh}
 [data-lab-track][data-static]{height:auto!important}
 [data-lab-track][data-static] [data-lab-stage]{position:relative;height:min(78vh,720px)}
@@ -994,7 +997,8 @@ html:not(.js) [data-cap="4"],[data-lab-track][data-static] [data-cap="4"]{opacit
 </div>
 <svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-lab" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-lab)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
 </div>
-<div data-lab-track style="position:relative;width:100vw;margin-left:calc(50% - 50vw);margin-top:20px">
+<div id="lab-dots" data-lab-dots aria-hidden="true"></div>
+<div id="lab-film" data-lab-track style="position:relative;width:100vw;margin-left:calc(50% - 50vw);margin-top:20px">
 <div data-lab-stage style="position:sticky;top:0;height:100vh;height:100svh;padding:clamp(10px,1.6vw,22px);box-sizing:border-box;display:flex">
 <div data-lab-window style="position:relative;flex:1;border-radius:clamp(18px,2vw,28px);overflow:hidden;background:#04050a;color:#fff;box-shadow:0 0 0 1px rgba(241,232,218,.12),0 50px 140px -50px rgba(255,122,61,.45)">
 <img data-lab-poster src="assets/lab/l/49.webp" width="1024" height="576" loading="lazy" decoding="async" alt="CHIRON, a scroll-driven film: the car's headlights in a tunnel" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s">
