@@ -41,6 +41,29 @@
     for(let i=0;i<N;i++){ if(Math.random()<0.55){ const c=C[(Math.random()*C.length)|0]; const r=Math.pow(Math.random(),2)*0.16; const th=Math.random()*6.283; a[i*3]=c[0]+Math.cos(th)*r; a[i*3+1]=c[1]+Math.sin(th)*r; a[i*3+2]=c[2]; } else { const p=C[(Math.random()*C.length)|0], q=C[(Math.random()*C.length)|0]; const t=Math.random(); a[i*3]=p[0]+(q[0]-p[0])*t; a[i*3+1]=p[1]+(q[1]-p[1])*t; a[i*3+2]=p[2]+(q[2]-p[2])*t; } } return a; }
   function shapeSphere(N, ox) { const a=new Float32Array(N*3); for(let i=0;i<N;i++){ const ph=Math.acos(1-2*(i+.5)/N), th=Math.PI*(1+Math.sqrt(5))*i; const r=1.05; a[i*3]=r*Math.sin(ph)*Math.cos(th)+ox; a[i*3+1]=r*Math.sin(ph)*Math.sin(th)*0.9; a[i*3+2]=r*Math.cos(ph);} return a; }
   function shapeHelix(N) { const a=new Float32Array(N*3); for(let i=0;i<N;i++){ const t=(i/N)*6.283*3.2; const x=(i/N-.5)*4.6; const s=i%2?1:-1; a[i*3]=x+(Math.random()-.5)*0.05; a[i*3+1]=Math.sin(t)*0.55*s+(Math.random()-.5)*0.05; a[i*3+2]=Math.cos(t)*0.55*s;} return a; }
+  // CHIRON's front in dots, sampled along the Lab light-scene SVG ([data-ll-car] in the template), so the drawing lives
+  // in one place. kind: 0 outline, 1-4 LED pair (outer → inner), 5 horseshoe, 6 badge; ord: how far along its line a dot
+  // sits, so the outline can draw itself. Width 1 unit, centred.
+  function shapeFromSvg(svg, N) {
+    const pos = new Float32Array(N * 3), kind = new Float32Array(N), ord = new Float32Array(N); let n = 0;
+    const put = (x, y, k, o) => { if (n >= N) return; pos[n*3] = (x - 500) / 1000; pos[n*3+1] = -(y - 280) / 1000; pos[n*3+2] = (Math.random() - 0.5) * 0.02; kind[n] = k; ord[n] = o; n++; };
+    const along = (els, count, k) => {
+      const lens = els.map(e => e.getTotalLength()), tot = lens.reduce((a, b) => a + b, 0) || 1;
+      els.forEach((e, j) => { const m = Math.round(count * lens[j] / tot); for (let i = 0; i < m; i++) { const f = (i + Math.random()) / m, q = e.getPointAtLength(f * lens[j]); put(q.x + (Math.random() - 0.5) * 2.4, q.y + (Math.random() - 0.5) * 2.4, k, f); } });
+    };
+    svg.querySelectorAll('[data-ll-leds] rect').forEach(r => {
+      const x = +r.getAttribute('x'), y = +r.getAttribute('y'), w = +r.getAttribute('width'), h = +r.getAttribute('height');
+      const m = /rotate\(([-\d.]+) ([-\d.]+) ([-\d.]+)\)/.exec(r.getAttribute('transform') || ''), a = m ? +m[1] * Math.PI / 180 : 0, cx = m ? +m[2] : x + w / 2, cy = m ? +m[3] : y + h / 2;
+      for (let i = 0, c = Math.round(N * 0.028); i < c; i++) { const dx = x + 2 + Math.random() * (w - 4) - cx, dy = y + 2 + Math.random() * (h - 4) - cy; put(cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a), 1 + +r.dataset.led, 0); }
+    });
+    const b = svg.querySelector('[data-ll-badge]');
+    if (b) for (let i = 0, c = Math.round(N * 0.015); i < c; i++) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()); put(+b.getAttribute('cx') + +b.getAttribute('rx') * r * Math.cos(a), +b.getAttribute('cy') + +b.getAttribute('ry') * r * Math.sin(a), 6, 0); }
+    along([...svg.querySelectorAll('[data-ll-shoe] path[pathLength]')], Math.round(N * 0.15), 5);
+    along([...svg.querySelectorAll('[data-ll-lines] path')], N - n, 0);
+    while (n < N) put(500, 518, 0, 1);
+    return { pos, kind, ord };
+  }
+  const scaled = (a, k) => { const o = new Float32Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] * k; return o; };
   function shapeScatter(N) { const a=new Float32Array(N*3); for(let i=0;i<N;i++){ const r=1.6+Math.random()*2.2, th=Math.random()*6.283, ph=Math.acos(2*Math.random()-1); a[i*3]=r*Math.sin(ph)*Math.cos(th); a[i*3+1]=r*Math.sin(ph)*Math.sin(th)*0.6; a[i*3+2]=r*Math.cos(ph)-1.5;} return a; }
 
   // portrait phones: turn a wide landscape shape into a tall one (swap axes) and fit it into the visible column
@@ -72,15 +95,17 @@
     const heroShape = lines ? fromPts(sampleText(lines, 960, 360), N, opts.heroScale || 2.3, opts.heroX || 0, opts.heroY || 0, 0.06) : shapeSphere(N, opts.heroX || 0);
     const byeTxt = fromPts(sampleText(['SAY HI'], 960, 300), N, 2.0, 0, 0.2, 0.06);
     const ribbon = shapeRibbon(N), torus = shapeTorus(N, 0), graph = shapeGraph(N), helix = shapeHelix(N), sphere = shapeSphere(N, 0);
-    // sections: hero, statement, work, open source, lab (the CHIRON light scene, dots stay faint), lab film, skills, contact
-    const targetsL = [heroShape, ribbon, torus, graph, sphere, sphere, helix, byeTxt];
+    // sections: hero, statement, work, open source, lab (the dots draw CHIRON's front and its lights), lab film, skills, contact
+    const LAB = 4, front = opts.labSvg ? shapeFromSvg(opts.labSvg, N) : null;
+    const frontL = front ? scaled(front.pos, 1.85) : sphere;
+    const targetsL = [heroShape, ribbon, torus, graph, frontL, frontL, helix, byeTxt];
     // portrait set: visible column at camera z=4.2 is ~1.2 wide × 2.6 tall — vertical ribbon/helix/graph, torus filling the width, "SAY HI" on two lines
-    const PW = 1.15, PH = 2.5, sphereP = fitPortrait(sphere, PW, PH);
-    const targetsP = [fitPortrait(heroShape, PW, PH * 0.7), toPortrait(ribbon, PW, PH, 1.7), fitPortrait(torus, PW, PH), toPortrait(graph, PW, PH, 1), sphereP, sphereP, toPortrait(helix, PW, PH, 1.4), fromPts(sampleText(['SAY', 'HI'], 960, 640), N, 1.15, 0, 0, 0.06)];
+    const PW = 1.15, PH = 2.5, frontP = front ? scaled(front.pos, 1.2) : fitPortrait(sphere, PW, PH);
+    const targetsP = [fitPortrait(heroShape, PW, PH * 0.7), toPortrait(ribbon, PW, PH, 1.7), fitPortrait(torus, PW, PH), toPortrait(graph, PW, PH, 1), frontP, frontP, toPortrait(helix, PW, PH, 1.4), fromPts(sampleText(['SAY', 'HI'], 960, 640), N, 1.15, 0, 0, 0.06)];
     let targets = targetsL, portraitMode = false;
-    const alphas = [opts.heroAlpha == null ? 0.95 : opts.heroAlpha, 0.3, 0.28, 0.32, 0.06, 0.3, 0.42, 0.9].map(a => isTouch ? Math.min(1, a * 1.25) : a);
+    const alphas = [opts.heroAlpha == null ? 0.95 : opts.heroAlpha, 0.3, 0.28, 0.32, 0.9, 0.3, 0.42, 0.9].map(a => isTouch ? Math.min(1, a * 1.25) : a);
     // how far each section's dots lean toward the accent colour (hero grey → work/oss coloured → contact back to ink)
-    const tints = [0.0, 0.35, 0.75, 0.55, 0.9, 0.9, 0.6, 0.2];
+    const tints = [0.0, 0.35, 0.75, 0.55, 1.0, 0.9, 0.6, 0.2];
     const scatter = shapeScatter(N);
     const rnd = new Float32Array(N); for (let i = 0; i < N; i++) rnd[i] = Math.random();
     const geo = new THREE.BufferGeometry();
@@ -88,17 +113,20 @@
     geo.setAttribute('position', attrA); geo.setAttribute('aB', attrB);
     geo.setAttribute('aScatter', new THREE.BufferAttribute(scatter, 3));
     geo.setAttribute('aRnd', new THREE.BufferAttribute(rnd, 1));
+    geo.setAttribute('aKind', new THREE.BufferAttribute(front ? front.kind : new Float32Array(N), 1));
+    geo.setAttribute('aOrd', new THREE.BufferAttribute(front ? front.ord : new Float32Array(N), 1));
     const uniforms = {
       uIntro: { value: 0 }, uMix: { value: 0 }, uTime: { value: 0 }, uAlpha: { value: 1 }, uMouse: { value: new THREE.Vector3(9, 9, 0) },
       uColor: { value: new THREE.Color(cssVar('--ink') || '#111') }, uAccent: { value: new THREE.Color(cssVar('--accent') || '#2f5cff') },
-      uPx: { value: renderer.getPixelRatio() }, uSize: { value: 1 }, uTint: { value: 0 }
+      uPx: { value: renderer.getPixelRatio() }, uSize: { value: 1 }, uTint: { value: 0 },
+      uLab: { value: 0 }, uCamZ: { value: 2.6 }, uDraw: { value: 1 }, uLed: { value: 4 }, uShoe: { value: 1 }, uFly: { value: 0 }, uNew: { value: 0 }, uFlick: { value: 0 }
     };
     const mat = new THREE.ShaderMaterial({
       uniforms, transparent: true, depthWrite: false,
       vertexShader: `
-        attribute vec3 aB, aScatter; attribute float aRnd;
-        uniform float uIntro, uMix, uTime, uPx, uSize; uniform vec3 uMouse;
-        varying float vA; varying float vR;
+        attribute vec3 aB, aScatter; attribute float aRnd, aKind, aOrd;
+        uniform float uIntro, uMix, uTime, uPx, uSize, uLab, uCamZ, uDraw, uLed, uShoe, uFly, uNew, uFlick; uniform vec3 uMouse;
+        varying float vA; varying float vR; varying float vHot; varying float vShoe; varying float vBadge;
         void main(){
           float m = smoothstep(0.0, 1.0, clamp(uMix * 1.3 - aRnd * 0.3, 0.0, 1.0));
           vec3 shape = mix(position, aB, m);
@@ -107,29 +135,38 @@
           vec3 pos = mix(aScatter, shape, p);
           pos.x += sin(uTime * 0.8 + aRnd * 6.283) * 0.006 * (1.0 + (1.0 - p) * 8.0);
           pos.y += cos(uTime * 0.7 + aRnd * 6.283) * 0.006 * (1.0 + (1.0 - p) * 8.0);
+          // Lab: CHIRON's front. Lamps light pair by pair (the newest flickers), the horseshoe and badge glow,
+          // the outline draws along its lines, then every dot flies at the camera and past it
+          float isLed = step(0.5, aKind) * step(aKind, 4.5);
+          float lit = isLed * step(aKind, uLed + 0.01) * (1.0 - uFlick * 0.85 * step(abs(aKind - uNew), 0.1));
+          float shoe = step(4.5, aKind) * step(aKind, 5.5) * uShoe, badge = step(5.5, aKind) * uShoe;
+          float seen = mix(1.0, step(aOrd, uDraw), uLab), fly = uLab * uFly;
+          pos.z += fly * (1.6 + aRnd * 2.4) * (uCamZ / 2.6); pos.xy *= 1.0 + fly * (0.4 + aRnd * 0.8);
           vec2 d = pos.xy - uMouse.xy; float dist = length(d);
-          float push = smoothstep(0.34, 0.0, dist) * 0.22;
+          float push = smoothstep(0.34, 0.0, dist) * 0.22 * (1.0 - 0.7 * uLab);
           pos.xy += normalize(d + 0.0001) * push; pos.z += push * 0.6;
           vec4 mv = modelViewMatrix * vec4(pos, 1.0);
           gl_Position = projectionMatrix * mv;
-          gl_PointSize = (1.4 + aRnd * 1.2 + push * 6.0) * uPx * uSize * (2.6 / -mv.z);
-          vA = 0.55 + 0.45 * p; vR = push;
+          gl_PointSize = min((1.4 + aRnd * 1.2 + push * 6.0) * uPx * uSize * (2.6 / -mv.z) * (1.0 + uLab * (lit * 0.55 + shoe * 0.3)), 42.0 * uPx);
+          vA = (0.55 + 0.45 * p) * seen * smoothstep(0.12, 0.8, -mv.z) * (1.0 - uLab * isLed * (1.0 - lit) * 0.55); vR = push;
+          vHot = uLab * lit; vShoe = uLab * shoe; vBadge = uLab * badge * (1.0 - uFly);
         }`,
       fragmentShader: `
-        precision mediump float; uniform vec3 uColor, uAccent; uniform float uAlpha, uTint; varying float vA; varying float vR;
+        precision mediump float; uniform vec3 uColor, uAccent; uniform float uAlpha, uTint; varying float vA; varying float vR; varying float vHot; varying float vShoe; varying float vBadge;
         void main(){
           vec2 c = gl_PointCoord - 0.5; if (dot(c,c) > 0.25) discard;
           vec3 base = mix(uColor, uAccent, uTint * (0.35 + 0.65 * vA));
-          gl_FragColor = vec4(mix(base, uAccent, clamp(vR * 4.0, 0.0, 1.0)), vA * uAlpha);
+          base = mix(base, vec3(1.0, 0.78, 0.52), vShoe); base = mix(base, vec3(1.0, 0.27, 0.24), vBadge); base = mix(base, vec3(1.0, 0.96, 0.89), vHot);
+          gl_FragColor = vec4(mix(base, uAccent, clamp(vR * 4.0, 0.0, 1.0)), min(1.0, vA * uAlpha + (vHot * 0.6 + vShoe * 0.25) * step(0.001, vA)));
         }`
     });
     const points = new THREE.Points(geo, mat); scene.add(points);
     let seg = -1;
     function setSeg(i) { if (i === seg) return; seg = i; attrA.array.set(targets[i]); attrB.array.set(targets[Math.min(i+1, targets.length-1)]); attrA.needsUpdate = true; attrB.needsUpdate = true; }
     setSeg(0);
-    const st = { rotX: 0, rotY: 0, tRotX: 0, tRotY: 0, drag: null, vel: 0, start: performance.now(), mix: 0, alpha: 1, tint: 0 };
+    const st = { rotX: 0, rotY: 0, tRotX: 0, tRotY: 0, drag: null, vel: 0, start: performance.now(), mix: 0, alpha: 1, tint: 0, led: 0, flickAt: -1e9 };
     function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
-      const portrait = w < h; camera.position.z = w < 700 ? 4.2 : 2.6; uniforms.uSize.value = portrait ? 1.15 : 1;
+      const portrait = w < h; camera.position.z = w < 700 ? 4.2 : 2.6; uniforms.uCamZ.value = camera.position.z; uniforms.uSize.value = portrait ? 1.15 : 1;
       if (portrait !== portraitMode) { portraitMode = portrait; targets = portrait ? targetsP : targetsL; const s = seg; seg = -1; setSeg(Math.max(0, s)); } }
     resize(); addEventListener('resize', debounce(resize, 100));
     const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), hit = new THREE.Vector3();
@@ -171,9 +208,16 @@
       st.mix += (tMix - st.mix) * 0.08; st.alpha += (tAlpha - st.alpha) * 0.08; st.tint += (tTint - st.tint) * 0.05;
       if (!st.drag) { st.vel *= 0.94; st.tRotY += st.vel; }
       st.rotY += (st.tRotY - st.rotY) * 0.06; st.rotX += (st.tRotX - st.rotX) * 0.06;
-      const spin = (seg > 0 && seg < targets.length - 1) ? scrollRot + t * 0.05 : 0;
-      points.rotation.set(st.rotX, st.rotY + spin, 0);
-      uniforms.uMix.value = st.mix; uniforms.uTime.value = t; uniforms.uAlpha.value = st.alpha; uniforms.uTint.value = st.tint;
+      const labW = !front ? 0 : seg === LAB - 1 ? st.mix : seg === LAB ? 1 : seg === LAB + 1 ? 1 - st.mix : 0;
+      let spin = (seg > 0 && seg < targets.length - 1) ? scrollRot + t * 0.05 : 0;
+      spin = (spin - 6.2832 * Math.round(spin / 6.2832)) * (1 - labW);   // the car faces you, no drift
+      points.rotation.set(st.rotX * (1 - 0.8 * labW), st.rotY * (1 - 0.8 * labW) + spin, 0);
+      const L = FX.lab || { draw: 1, led: 4, shoe: 1, fly: 0 };   // set by app.js from the Lab scroll; lit car by default
+      if (L.led > st.led) { uniforms.uNew.value = L.led; st.flickAt = now; } st.led = L.led;
+      const fe = now - st.flickAt;   // a newly lit lamp blinks twice before it settles
+      uniforms.uFlick.value = (fe > 70 && fe < 140) || (fe > 220 && fe < 270) ? 1 : 0;
+      uniforms.uLab.value = labW; uniforms.uDraw.value = L.draw; uniforms.uLed.value = L.led; uniforms.uShoe.value = L.shoe; uniforms.uFly.value = L.fly;
+      uniforms.uMix.value = seg === LAB ? 0 : st.mix; uniforms.uTime.value = t; uniforms.uAlpha.value = st.alpha; uniforms.uTint.value = st.tint;
       renderer.render(scene, camera); requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

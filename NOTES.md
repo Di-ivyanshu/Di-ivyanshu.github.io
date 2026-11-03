@@ -23,8 +23,9 @@ sh _src/build/build.sh          # needs Python 3 + esbuild (npx)
   frames (`00.webp`…`89.webp`, every 6th frame of https://di-ivyanshu.github.io/chiron-scroll/frames/), scrubbed on a
   canvas by `initLab()`. Frames are fetched only when the visitor gets near the section; reduced motion and
   data saver get the poster frame (`l/49.webp`) instead
-- before the film, CHIRON's light signature: an SVG front view (template, `[data-lab-light]`) whose outline draws in the
-  dark, four-LED lamps light pair by pair, the horseshoe glows, then the light floods the screen; `initLight()` in app.js
+- before the film, CHIRON's light signature in the page's dots: `fx.js` samples the front-view SVG in the template
+  (`[data-ll-car]`, also the no-WebGL fallback) into the particle field; `initLight()` in app.js drives it by scroll
+  (outline draws, four-LED lamps light pair by pair, horseshoe glows, then every dot flies at the camera)
 
 SEO files at the root: `robots.txt`, `sitemap.xml` (update `lastmod` when content changes),
 `site.webmanifest`, `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon-512.png`.
