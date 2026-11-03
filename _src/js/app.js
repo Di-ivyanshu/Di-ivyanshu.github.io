@@ -184,6 +184,115 @@
     }
   }
 
+  /* ---------- night: after the sunset, stars come out, the repos draw themselves as constellations, the moon rises ---------- */
+  function initNight() {
+    const band = $('[data-night]', root); if (!band) return;
+    // twinkling only runs while the band is on screen
+    new IntersectionObserver(en => band.toggleAttribute('data-live', en[0].isIntersecting), { rootMargin: '10% 0px' }).observe(band);
+    if (reduced) return;   // reduced motion: the finished night sky, nothing moves
+    const title = $('[data-n-title]', band), moon = $('[data-n-moon]', band);
+    const dunes = [1, 2].map(k => $('[data-n-dune="' + k + '"]', band));
+    const lerp = (a, b, t) => a + (b - a) * t, ease = t => 1 - Math.pow(1 - t, 3), clamp = t => Math.min(1, Math.max(0, t));
+    const travel = [[0.05, 0], [0.13, -0.02]];   // front, back dune: [start, end] offset as a fraction of the band height
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const r = band.getBoundingClientRect(), vh = innerHeight, H = r.height;
+      const p = clamp((vh - r.top) / (vh + H * 0.35));   // 0: band enters at the bottom; 1: well past the top
+      band.style.setProperty('--night', ease(clamp(p / 0.5)).toFixed(3));
+      band.style.setProperty('--draw', ease(clamp((p - 0.16) / 0.4)).toFixed(3));
+      const rise = ease(clamp(p / 0.62));
+      title.style.transform = 'translate3d(0,' + ((1 - rise) * H * 0.34).toFixed(1) + 'px,0)';
+      title.style.opacity = (0.15 + 0.85 * rise).toFixed(3);
+      moon.style.transform = 'translate3d(0,' + (lerp(0.42, 0, ease(clamp(p / 0.7))) * H).toFixed(1) + 'px,0)';   // rises from behind the dune
+      dunes.forEach((d, k) => { if (d) d.style.transform = 'translate3d(0,' + (lerp(travel[k][0], travel[k][1], p) * H).toFixed(1) + 'px,0)'; });
+    };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    new IntersectionObserver(en => {
+      if (en[0].isIntersecting) addEventListener('scroll', onScroll, { passive: true }); else removeEventListener('scroll', onScroll);
+      onScroll();
+    }, { rootMargin: '10% 0px' }).observe(band);
+    addEventListener('resize', onScroll, { passive: true });
+    update();
+
+    // desktop: the pointer joins the nearest stars, so you draw your own constellation
+    if (isTouch) return;
+    const lines = $$('[data-n-cursor] line', band), stars = $$('[data-node],[data-tw]', band), REACH = 230;
+    let px = 0, py = 0, on = false, raf = 0;
+    const draw = () => {
+      raf = 0;
+      const b = band.getBoundingClientRect();
+      const near = stars.map(s => { const q = s.getBoundingClientRect(), x = q.left + q.width / 2 - b.left, y = q.top + q.height / 2 - b.top; return [Math.hypot(x - px, y - py), x, y]; })
+        .sort((a, c) => a[0] - c[0]);
+      lines.forEach((l, i) => {
+        const n = near[i], a = on && n && n[0] < REACH ? 1 - n[0] / REACH : 0;
+        if (a > 0) { l.setAttribute('x1', px.toFixed(1)); l.setAttribute('y1', py.toFixed(1)); l.setAttribute('x2', n[1].toFixed(1)); l.setAttribute('y2', n[2].toFixed(1)); }
+        l.style.opacity = (a * 0.55).toFixed(3);
+      });
+    };
+    band.addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch') return;
+      const b = band.getBoundingClientRect(); px = e.clientX - b.left; py = e.clientY - b.top; on = true;
+      if (!raf) raf = requestAnimationFrame(draw);
+    });
+    band.addEventListener('pointerleave', () => { on = false; if (!raf) raf = requestAnimationFrame(draw); });
+  }
+
+  /* ---------- "Open source": letters light up like stars near the pointer, with a few sparks ---------- */
+  function initStarTitle() {
+    const h = $('[data-starlit]', root); if (!h || reduced) return;
+    const text = h.textContent; h.textContent = '';
+    const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = text;   // what readers and crawlers get
+    const vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true');
+    // each letter is drawn by CSS from data-c, so the heading's text stays "Open source" once, in the sr-only copy
+    const letters = [...text].map(c => { const s = document.createElement('span'); s.className = 'sl'; s.dataset.c = c; vis.appendChild(s); return s; });
+    h.append(sr, vis);
+    const lum = letters.map(() => 0);
+    let cx = [], cy = 0, px = -9999, py = 0, over = false, raf = 0, sx = 0, sy = 0, sparks = 0;
+    const measure = () => { const hr = h.getBoundingClientRect(); cx = letters.map(s => { const r = s.getBoundingClientRect(); return r.left + r.width / 2 - hr.left; }); cy = hr.height * 0.5; };
+    const loop = () => {
+      raf = 0;
+      const R = h.offsetHeight * 0.95;
+      let busy = over;
+      letters.forEach((s, i) => {
+        const d = over ? Math.hypot(cx[i] - px, (cy - py) * 0.6) / R : 9, t = Math.max(0, 1 - d), goal = t * t * (3 - 2 * t);
+        lum[i] += (goal - lum[i]) * 0.16;
+        if (Math.abs(goal - lum[i]) > 0.004) busy = true;
+        s.style.setProperty('--l', lum[i].toFixed(3));
+      });
+      if (busy) raf = requestAnimationFrame(loop);
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    const spark = (x, y) => {
+      if (sparks > 6) return; sparks++;
+      const s = document.createElement('span'); s.className = 'spk'; s.setAttribute('aria-hidden', 'true');
+      s.style.left = x.toFixed(1) + 'px'; s.style.top = y.toFixed(1) + 'px'; s.style.color = Math.random() < 0.6 ? '#fff4e2' : '#ffc887';
+      s.addEventListener('animationend', () => { s.remove(); sparks--; }, { once: true });
+      h.appendChild(s);
+    };
+    const at = (x, y) => {
+      px = x; py = y; kick();
+      if (Math.hypot(x - sx, y - sy) > 44) { sx = x; sy = y; spark(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * h.offsetHeight * 0.5); }
+    };
+    const local = e => { const r = h.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    h.addEventListener('pointerenter', e => { if (e.pointerType === 'touch') return; measure(); over = true; at(...local(e)); });
+    h.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; at(...local(e)); });
+    h.addEventListener('pointerleave', () => { over = false; kick(); });
+    // touch screens have no hover: a wave of starlight runs across the word once, after it has risen
+    if (isTouch) {
+      const io = new IntersectionObserver(en => {
+        if (!en[0].isIntersecting) return; io.disconnect();
+        setTimeout(() => {
+          measure(); over = true;
+          const w = h.offsetWidth, t0 = performance.now(), dur = 1700;
+          const sweep = now => { const p = Math.min(1, (now - t0) / dur); at(-w * 0.15 + w * 1.3 * (p * p * (3 - 2 * p)), cy); if (p < 1) requestAnimationFrame(sweep); else { over = false; kick(); } };
+          requestAnimationFrame(sweep);
+        }, 450);
+      }, { threshold: 0.9 });
+      io.observe(h);
+    }
+  }
+
   /* ---------- statement columns: each one types itself out once, with a caret ---------- */
   function initTyping() {
     const box = $('[data-cols]', root); if (!box || reduced) return;
@@ -364,6 +473,7 @@
     requestAnimationFrame(() => setTimeout(() => {
       initStatement(); initTyping();
       setTimeout(() => { initHorizon(); initWorkTitle(); initBeams(); initFX(); }, 0);
+      setTimeout(() => { initNight(); initStarTitle(); }, 0);
     }, 0));
     afterLoad(loadHeroVideo, isTouch ? 800 : 200);
     afterLoad(scheduleGitHub, 0);

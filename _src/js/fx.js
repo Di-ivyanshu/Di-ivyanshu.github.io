@@ -214,9 +214,11 @@
     const io = new IntersectionObserver(entries => entries.forEach(en => {
       if (!en.isIntersecting) return; const el = en.target; const d = +el.dataset.reveal || 0;
       el.style.transition = `opacity .9s cubic-bezier(.2,.8,.2,1) ${d}ms, transform 1s cubic-bezier(.2,.8,.2,1) ${d}ms, clip-path 1s cubic-bezier(.2,.8,.2,1) ${d}ms`;
-      el.style.opacity = 1; el.style.transform = 'translateY(0)'; el.style.clipPath = 'inset(0 0 0 0)'; io.unobserve(el);
+      // the clip opens well past the box (card glows spill outside it), then goes away, so no glow is cut off square
+      el.style.opacity = 1; el.style.transform = 'translateY(0)'; el.style.clipPath = 'inset(-160px -160px -160px -160px)'; io.unobserve(el);
+      setTimeout(() => { el.style.clipPath = 'none'; }, d + 1100);
     }), { threshold: 0.12 });
-    els.forEach(el => { el.style.opacity = 0; el.style.transform = 'translateY(28px)'; el.style.clipPath = 'inset(0 0 12% 0)'; io.observe(el); });
+    els.forEach(el => { el.style.opacity = 0; el.style.transform = 'translateY(28px)'; el.style.clipPath = 'inset(-160px -160px 12% -160px)'; io.observe(el); });
   };
 
   /* ---------- PARALLAX MEDIA ---------- */
