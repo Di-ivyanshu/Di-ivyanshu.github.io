@@ -673,7 +673,6 @@ video{display:block}
 [data-oss-body]{padding:20px 18px 22px!important}
 [data-oss-stats]{gap:10px!important}
 [data-oss-stats] p:first-child{font-size:18px!important}
-[data-lab-cap]{padding:18px!important}
 [data-ring-wrap]{height:250px!important;margin-top:8px!important}
 [data-ring] span{font-size:17px!important;width:140px!important;margin-left:-70px!important}
 [data-contact-form]{padding:20px 18px!important}
@@ -703,8 +702,10 @@ video{display:block}
 [data-horizon-foot]{flex-direction:column;align-items:flex-start!important;gap:8px!important}
 }
 /* lower sections skip layout/paint until they come near the screen (sticky side labels need >=1440px, so only below that) */
-@media (max-width:1439px){#oss,#lab,#skills,#contact{content-visibility:auto}#oss{contain-intrinsic-size:auto 1620px}#lab{contain-intrinsic-size:auto 900px}#skills{contain-intrinsic-size:auto 640px}#contact{contain-intrinsic-size:auto 670px}}
-@media (max-width:760px){#oss{contain-intrinsic-size:auto 2290px}#lab{contain-intrinsic-size:auto 1040px}#skills{contain-intrinsic-size:auto 740px}#contact{contain-intrinsic-size:auto 1050px}}
+[data-lab-panel]{content-visibility:auto;contain-intrinsic-size:auto 520px}
+@media (max-width:760px){[data-lab-panel]{contain-intrinsic-size:auto 1080px}}
+@media (max-width:1439px){#oss,#skills,#contact{content-visibility:auto}#oss{contain-intrinsic-size:auto 1620px}#skills{contain-intrinsic-size:auto 640px}#contact{contain-intrinsic-size:auto 670px}}
+@media (max-width:760px){#oss{contain-intrinsic-size:auto 2290px}#skills{contain-intrinsic-size:auto 740px}#contact{contain-intrinsic-size:auto 1050px}}
 /* horizon: film grain like the hero loop, only where the light is */
 [data-h-grain]{opacity:.3;mix-blend-mode:overlay;background-size:160px;background-image:url("assets/grain.webp");-webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 64%,#000 25%,transparent 78%);mask-image:radial-gradient(ellipse 62% 58% at 50% 64%,#000 25%,transparent 78%)}
 /* "Work": sunset light follows the pointer across the letters (mirage shimmer is added in JS) */
@@ -725,12 +726,8 @@ video{display:block}
 [data-oss-card]:hover [data-oss-panel],[data-lab-panel]:hover{background-color:color-mix(in srgb,var(--card) 100%,#2a140a 12%)!important}
 [data-oss-card]:hover [data-glow-soft],[data-lab-panel]:hover [data-glow-soft]{opacity:1!important}
 }
-[data-lab-play]{opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
-[data-lab-film]:hover [data-lab-play],[data-lab-film]:focus-visible [data-lab-play]{opacity:1;transform:none}
-@media (hover:none){[data-lab-play]{opacity:1;transform:none}}
 @media (max-width:760px){
-[data-lab-body]{grid-template-columns:minmax(0,1fr)!important;padding:20px 18px 92px!important;gap:22px!important}
-[data-lab-film]{aspect-ratio:4/3!important;margin:10px 10px 0!important}
+[data-lab-body]{grid-template-columns:minmax(0,1fr)!important;padding:24px 18px 92px!important;gap:30px!important}
 [data-oss-body]{padding:20px 18px 84px!important}
 [data-cols]{margin-left:-14px!important;margin-right:-14px!important}
 [data-col]{padding:18px 14px 30px!important}
@@ -763,6 +760,32 @@ video{display:block}
 [data-night-foot]{flex-direction:column;align-items:flex-start!important;gap:8px!important}
 }
 @media (prefers-reduced-motion:reduce){[data-tw]{animation:none!important;opacity:.7}}
+/* ---- lab: a scroll film running inside the page ---- */
+.js [data-lab-track]{height:300vh}
+[data-lab-track][data-static]{height:auto!important}
+[data-lab-track][data-static] [data-lab-stage]{position:relative;height:min(78vh,720px)}
+[data-lab-track][data-static] [data-lab-cue],[data-lab-track][data-static] [data-lab-hud]{display:none}
+html:not(.js) [data-lab-cue],html:not(.js) [data-lab-hud]{display:none}
+[data-cap]{position:absolute;bottom:clamp(92px,11vh,130px);max-width:min(560px,78%);opacity:0;transform:translateY(18px);transition:opacity .55s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1);text-shadow:0 2px 30px rgba(0,0,0,.6)}
+[data-cap][data-side="l"]{left:clamp(20px,4vw,64px)}
+[data-cap][data-side="r"]{right:clamp(20px,4vw,64px);text-align:right}
+[data-cap].on{opacity:1;transform:none}
+html:not(.js) [data-cap="4"],[data-lab-track][data-static] [data-cap="4"]{opacity:1;transform:none}
+[data-lab-rail]{position:absolute;left:clamp(14px,2vw,28px);right:clamp(14px,2vw,28px);bottom:clamp(14px,2vw,24px);display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+[data-seg]{display:block;min-width:0}
+[data-seg] i{display:block;height:2px;border-radius:2px;background:linear-gradient(90deg,#ffb27a calc(var(--f,0) * 100%),rgba(255,255,255,.18) 0)}
+[data-seg] b{display:block;margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .3s}
+[data-seg].on b{color:#fff}
+@media (max-width:760px){
+.js [data-lab-track]{height:260vh}
+[data-seg] b{display:none}
+[data-cap]{bottom:80px;max-width:86%}
+[data-cap] [data-cap-line]{font-size:clamp(30px,9vw,40px)!important}
+[data-lab-hud]{font-size:10px!important}
+[data-lab-url]{font-size:11px!important;padding:8px 12px!important}
+}
+@media (max-width:760px){[data-lab-hud]{top:auto!important;right:auto!important;left:16px;bottom:34px}}
+@media (prefers-reduced-motion:reduce){.js [data-lab-track]{height:auto}[data-lab-stage]{position:relative!important;height:min(78vh,720px)!important}[data-lab-cue],[data-lab-hud]{display:none}[data-cap="4"]{opacity:1;transform:none}}
 </style>
 
 </helmet>
@@ -967,28 +990,43 @@ video{display:block}
 <div data-reveal="0">
 <div data-sec-head="true" style="display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap">
 <h2 style="margin:0;font-size:clamp(28px,4vw,52px);font-weight:500;letter-spacing:-.03em;white-space:nowrap">Lab</h2>
-<p style="margin:0;font-size:15px;line-height:1.5;color:var(--muted)">I also design and build scroll-driven motion websites.</p>
+<p style="margin:0;font-size:15px;line-height:1.5;color:var(--muted)">I also design and build scroll-driven motion websites. Here is one, running inside this page.</p>
 </div>
 <svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-lab" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-lab)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
 </div>
-<div data-lab-panel data-reveal="0" style="--pc:rgba(255,122,61,1);position:relative;isolation:isolate;margin-top:32px;border-radius:28px;background-color:color-mix(in srgb,var(--card) 88%,transparent);overflow:hidden">
-<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;overflow:hidden"><div data-glow-soft style="position:absolute;left:0;right:0;bottom:0;height:85%;background:radial-gradient(ellipse 55% 62% at 70% 100%,color-mix(in srgb,var(--pc) 38%,transparent),transparent 72%);opacity:.75;transition:opacity .6s"></div><svg viewBox="0 0 1200 200" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:100%;height:min(22%,110px);display:block"><path d="M0,118 C180,78 360,84 560,116 C760,148 930,86 1200,98 L1200,200 L0,200 Z" style="fill:#160c07;stroke:var(--pc);stroke-opacity:.4;stroke-width:1.5" vector-effect="non-scaling-stroke"/><path d="M0,162 C240,128 500,140 760,164 C960,182 1090,150 1200,156 L1200,200 L0,200 Z" style="fill:#100a07"/></svg></div>
-<a href="https://di-ivyanshu.github.io/chiron-scroll/" target="_blank" rel="noopener" data-lab-film aria-label="Open CHIRON, the scroll-driven film, live" style="display:block;position:relative;margin:14px 14px 0;border-radius:20px;overflow:hidden;aspect-ratio:21/9;min-height:220px;background:linear-gradient(120deg,#24100a,#000 55%,#1f0b06);color:#fff">
-<video src="{{ vidChiron }}" muted="{{ true }}" loop="{{ true }}" sc-camel-plays-inline="{{ true }}" preload="auto" data-parallax="24" style="width:100%;height:100%;object-fit:cover;opacity:.92"></video>
-<div data-lab-cap="true" style="position:absolute;left:0;right:0;bottom:0;padding:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;background:linear-gradient(transparent,rgba(0,0,0,.65))">
-<h3 style="margin:0;font-size:clamp(26px,3.6vw,52px);font-weight:500;letter-spacing:-.03em;line-height:1">Then the light.</h3>
-<span data-lab-play aria-hidden="true" style="flex-shrink:0;padding:10px 16px;border-radius:999px;background:rgba(14,10,8,.72);backdrop-filter:blur(8px);font-size:13px;font-weight:600;white-space:nowrap">Scroll it live ↗</span>
+<div data-lab-track style="position:relative;width:100vw;margin-left:calc(50% - 50vw);margin-top:20px">
+<div data-lab-stage style="position:sticky;top:0;height:100vh;height:100svh;padding:clamp(10px,1.6vw,22px);box-sizing:border-box;display:flex">
+<div data-lab-window style="position:relative;flex:1;border-radius:clamp(18px,2vw,28px);overflow:hidden;background:#04050a;color:#fff;box-shadow:0 0 0 1px rgba(241,232,218,.12),0 50px 140px -50px rgba(255,122,61,.45)">
+<img data-lab-poster src="assets/lab/l/49.webp" width="1024" height="576" loading="lazy" decoding="async" alt="CHIRON, a scroll-driven film: the car's headlights in a tunnel" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .6s">
+<canvas data-lab-back width="64" height="36" aria-hidden="true" style="position:absolute;inset:-6%;width:112%;height:112%;display:block;filter:blur(14px) brightness(.55)"></canvas>
+<canvas data-lab-canvas aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+<div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 50% 45%,transparent 45%,rgba(2,3,6,.55)),linear-gradient(180deg,rgba(2,3,6,.55),transparent 22%,transparent 55%,rgba(2,3,6,.78))"></div>
+<div data-lab-bar style="position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:clamp(12px,1.6vw,20px)">
+<a href="https://di-ivyanshu.github.io/chiron-scroll/" target="_blank" rel="noopener" data-lab-url style="display:inline-flex;align-items:center;gap:9px;max-width:100%;padding:9px 14px;border-radius:999px;background:rgba(8,8,12,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" style-hover="color:#fff;background:rgba(20,14,10,.78)"><span aria-hidden="true" style="width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80"></span>di-ivyanshu.github.io/chiron-scroll ↗</a>
 </div>
-</a>
-<div data-lab-body style="display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px 48px;padding:28px 32px 112px;align-items:start">
+<p data-lab-hud aria-hidden="true" style="position:absolute;top:calc(clamp(12px,1.6vw,20px) + 10px);right:calc(clamp(12px,1.6vw,20px) + 4px);margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.62);white-space:nowrap;text-align:right">scroll <b data-hud="s" style="font-weight:500;color:#fff">0.000</b> → frame <b data-hud="f" style="font-weight:500;color:#fff">001</b>/540</p>
+<div data-lab-caps aria-hidden="true"><div data-cap="0" data-side="l"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">01 MACHINE</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Not a car. An engineering object.</p></div><div data-cap="1" data-side="r"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">02 W16</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Sixteen cylinders. Four turbochargers.</p></div><div data-cap="2" data-side="l"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">03 WHEEL</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Precision you can hear.</p></div><div data-cap="3" data-side="r"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">04 DETAIL</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Every surface answers.</p></div><div data-cap="4" data-side="l"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">05 TUNNEL</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Then the light.</p></div><div data-cap="5" data-side="r"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">06 TRACKING</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Speed is a discipline.</p></div><div data-cap="6" data-side="l"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">07 DEPARTURE</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Gone.</p></div><div data-cap="7" data-side="r"><p style="margin:0 0 10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#ffb27a">08 ASCENT</p><p data-cap-line style="margin:0;font-size:clamp(30px,4.6vw,68px);font-weight:500;letter-spacing:-.035em;line-height:1.02;color:#fff;text-wrap:balance">Engineered without compromise.</p></div></div>
+<p data-lab-cue aria-hidden="true" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;padding:12px 20px;border-radius:999px;background:rgba(8,8,12,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:14px;font-weight:600;white-space:nowrap;transition:opacity .5s">Scroll to drive the camera ↓</p>
+<div data-lab-rail aria-hidden="true"><span data-seg><i></i><b>01 Machine</b></span><span data-seg><i></i><b>02 W16</b></span><span data-seg><i></i><b>03 Wheel</b></span><span data-seg><i></i><b>04 Detail</b></span><span data-seg><i></i><b>05 Tunnel</b></span><span data-seg><i></i><b>06 Tracking</b></span><span data-seg><i></i><b>07 Departure</b></span><span data-seg><i></i><b>08 Ascent</b></span></div>
+</div>
+</div>
+</div>
+<div data-lab-panel data-reveal="0" style="--pc:rgba(255,122,61,1);position:relative;isolation:isolate;margin-top:clamp(24px,3vw,40px);border-radius:28px;background-color:color-mix(in srgb,var(--card) 88%,transparent);overflow:hidden">
+<div aria-hidden="true" style="position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;overflow:hidden"><div data-glow-soft style="position:absolute;left:0;right:0;bottom:0;height:85%;background:radial-gradient(ellipse 55% 62% at 30% 100%,color-mix(in srgb,var(--pc) 34%,transparent),transparent 72%);opacity:.75;transition:opacity .6s"></div><svg viewBox="0 0 1200 200" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:100%;height:min(18%,96px);display:block"><path d="M0,118 C180,78 360,84 560,116 C760,148 930,86 1200,98 L1200,200 L0,200 Z" style="fill:#160c07;stroke:var(--pc);stroke-opacity:.4;stroke-width:1.5" vector-effect="non-scaling-stroke"/><path d="M0,162 C240,128 500,140 760,164 C960,182 1090,150 1200,156 L1200,200 L0,200 Z" style="fill:#100a07"/></svg></div>
+<div data-lab-body style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:28px 56px;padding:clamp(24px,3.4vw,44px) clamp(24px,3.4vw,44px) 112px;align-items:start">
 <div>
-<p style="margin:0;font-size:17px;line-height:1.55;color:var(--muted);max-width:520px">CHIRON is an eight-chapter film about the Bugatti Chiron that plays as you scroll. Scroll position picks the frame, so the visitor drives the camera; a full brand page follows the film.</p>
-<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px">
+<h3 style="margin:0;font-size:clamp(30px,3.6vw,48px);font-weight:500;letter-spacing:-.035em;line-height:1">CHIRON</h3>
+<p style="margin:16px 0 0;font-size:17px;line-height:1.55;color:var(--muted);max-width:500px">An eight-chapter film about the Bugatti Chiron that plays as you scroll, followed by a full brand page. The visitor drives the camera. The preview above runs on 90 of its 540 frames; the live site plays every one.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:26px">
 <a href="https://di-ivyanshu.github.io/chiron-scroll/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:13px 22px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-1px);box-shadow:0 0 24px rgba(255,122,61,.45);color:var(--accent-ink)">Open the live film ↗</a>
 <a href="https://github.com/Di-ivyanshu/chiron-scroll" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:13px 22px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--ink);font-weight:600;font-size:14px;transition:background .2s" style-hover="background:color-mix(in srgb,var(--ink) 16%,transparent);color:var(--ink)">Read the code ↗</a>
 </div>
+<p style="margin:22px 0 0;font-size:15px;line-height:1.5;color:var(--muted)">Want one for a product launch? <a href="#contact" style="color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--accent) 70%,transparent)" style-hover="color:var(--accent)">Tell me about it</a>.</p>
 </div>
-<div data-card-nums style="display:flex;flex-wrap:wrap;gap:14px 34px;margin-top:4px"><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">540</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">WebP frames scrubbed on a canvas</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">8</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">chapters in one continuous film</p></div><div><p style="margin:0;font-family:'Inter',sans-serif;font-weight:600;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em;line-height:1;color:var(--ink)">77 s</p><p style="margin:7px 0 0;font-size:13px;line-height:1.35;color:var(--muted);max-width:170px">of footage, decoded in a sliding window so phones keep up</p></div></div>
+<div>
+<p style="margin:0 0 4px;font-size:13px;color:var(--muted)">How the film runs</p>
+<ol style="list-style:none;margin:0;padding:0"><li style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 14px;padding:18px 0;border-top:1px solid var(--line)"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);padding-top:3px">01</span><div><p style="margin:0;font-size:17px;font-weight:600;line-height:1.35;color:var(--ink)">Render the film as frames</p><p style="margin:6px 0 0;font-size:15px;line-height:1.55;color:var(--muted)">540 WebP stills, one for each step of the scroll, cut into eight chapters.</p></div></li><li style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 14px;padding:18px 0;border-top:1px solid var(--line)"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);padding-top:3px">02</span><div><p style="margin:0;font-size:17px;font-weight:600;line-height:1.35;color:var(--ink)">Fetch small, decode near the playhead</p><p style="margin:6px 0 0;font-size:15px;line-height:1.55;color:var(--muted)">Every frame arrives as a compressed blob; only a sliding window around the current one is decoded, so phones keep up.</p></div></li><li style="display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 14px;padding:18px 0;border-top:1px solid var(--line)"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);padding-top:3px">03</span><div><p style="margin:0;font-size:17px;font-weight:600;line-height:1.35;color:var(--ink)">Let the scroll pick the frame</p><p style="margin:6px 0 0;font-size:15px;line-height:1.55;color:var(--muted)">Scroll position maps to a frame index and the canvas redraws it on the next animation frame. Captions and the chapter rail read the same number.</p></div></li></ol>
+</div>
 </div>
 </div>
 </section>

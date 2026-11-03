@@ -293,6 +293,101 @@
     }
   }
 
+  /* ---------- lab: CHIRON's frames scrubbed on a canvas by the scroll, with its chapters and a live readout ---------- */
+  function initLab() {
+    const track = $('[data-lab-track]', root); if (!track) return;
+    const canvas = $('[data-lab-canvas]', track), ctx = canvas && canvas.getContext('2d');
+    if (reduced || saveData || !ctx || !window.createImageBitmap) { track.setAttribute('data-static', ''); return; }   // the poster still and the text
+    const N = 90, TOTAL = 540, CH = [0, 0.1244, 0.2487, 0.3731, 0.4974, 0.6218, 0.7461, 0.8705, 1];   // chapter starts, as in the film
+    const dir = 'assets/lab/' + (innerWidth < 760 ? 's/' : 'l/');
+    const poster = $('[data-lab-poster]', track), cue = $('[data-lab-cue]', track);
+    const caps = $$('[data-cap]', track), segs = $$('[data-seg]', track), hudS = $('[data-hud="s"]', track), hudF = $('[data-hud="f"]', track);
+    const clamp = t => Math.min(1, Math.max(0, t));
+    const blobs = [], bmps = new Map(), pending = new Set();
+    let smooth = 0, raf = 0, drawn = '', started = false, chapter = -1, onStage = false;
+
+    // coarse to fine, so the whole film can be scrubbed (roughly) after the first few frames arrive
+    const order = [];
+    for (let step = 16; step >= 1; step >>= 1) for (let i = 0; i < N; i += step) if (!order.includes(i)) order.push(i);
+    const load = () => {
+      let k = 0;
+      const worker = async () => {
+        while (k < order.length) {
+          const i = order[k++];
+          try { const r = await fetch(dir + String(i).padStart(2, '0') + '.webp'); if (r.ok) { blobs[i] = await r.blob(); kick(); } } catch (e) { /* drawn from a neighbour */ }
+        }
+      };
+      for (let w = 0; w < 4; w++) worker();
+    };
+    // only frames near the playhead are decoded (memory stays small on phones)
+    const decode = i => {
+      if (i < 0 || i >= N || bmps.has(i) || pending.has(i) || !blobs[i]) return;
+      pending.add(i);
+      createImageBitmap(blobs[i]).then(b => { pending.delete(i); bmps.set(i, b); kick(); }, () => pending.delete(i));
+    };
+    const keepNear = c => {
+      for (let d = -3; d <= 6; d++) decode(c + d);
+      if (bmps.size > 24) for (const [i, b] of bmps) if (Math.abs(i - c) > 10) { if (b.close) b.close(); bmps.delete(i); }
+    };
+    const nearest = i => { if (bmps.has(i)) return i; for (let d = 1; d < N; d++) { if (bmps.has(i - d)) return i - d; if (bmps.has(i + d)) return i + d; } return -1; };
+    // landscape: the frame covers the window. Portrait (phones): covering would show a quarter of a 16:9 frame,
+    // so it fills the width and ~60% of the height, over a blurred copy of itself (a 64x36 canvas scaled up)
+    const back = $('[data-lab-back]', track), bctx = back && back.getContext('2d');
+    let portrait = false;
+    const draw = b => {
+      const W = canvas.width, H = canvas.height, s = portrait ? Math.max(W / b.width, 0.6 * H / b.height) : Math.max(W / b.width, H / b.height);
+      const w = b.width * s, h = b.height * s;
+      if (portrait) { ctx.clearRect(0, 0, W, H); if (bctx) bctx.drawImage(b, 0, 0, 64, 36); }
+      ctx.drawImage(b, (W - w) / 2, (H - h) / 2, w, h);
+    };
+    const size = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2), r = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(r.width * dpr)); canvas.height = Math.max(1, Math.round(r.height * dpr));
+      portrait = r.height > r.width * 1.05;
+      // feather the frame's top and bottom edges into the blurred backdrop
+      const edge = portrait ? Math.max(0, 50 - 0.6 * 50 * Math.max(1, (r.width / r.height) * (9 / 16) / 0.6)) : 0;
+      const m = portrait ? 'linear-gradient(180deg,transparent ' + edge.toFixed(1) + '%,#000 ' + (edge + 9).toFixed(1) + '%,#000 ' + (100 - edge - 9).toFixed(1) + '%,transparent ' + (100 - edge).toFixed(1) + '%)' : '';
+      canvas.style.webkitMaskImage = canvas.style.maskImage = m;
+      if (back) back.style.display = portrait ? '' : 'none';
+      drawn = ''; kick();
+    };
+    const progress = () => { const r = track.getBoundingClientRect(); return clamp(-r.top / Math.max(1, r.height - innerHeight)); };
+
+    const frame = () => {
+      raf = 0;
+      const target = progress();
+      smooth += (target - smooth) * 0.22; if (Math.abs(target - smooth) < 0.0004) smooth = target;
+      const i = Math.round(smooth * (N - 1));
+      keepNear(i);
+      const a = nearest(i), key = a + '|' + canvas.width + 'x' + canvas.height;
+      if (a >= 0 && key !== drawn) {
+        drawn = key; draw(bmps.get(a));
+        if (poster.style.opacity !== '0') poster.style.opacity = '0';
+      }
+      // the same number drives the readout, the captions and the chapter rail
+      hudS.textContent = smooth.toFixed(3);
+      hudF.textContent = String(Math.round(smooth * (TOTAL - 1)) + 1).padStart(3, '0');
+      let ch = 0; while (ch < 7 && smooth >= CH[ch + 1]) ch++;
+      if (ch !== chapter) { chapter = ch; segs.forEach((s, k) => s.classList.toggle('on', k === ch)); }
+      segs.forEach((s, k) => s.style.setProperty('--f', clamp((smooth - CH[k]) / (CH[k + 1] - CH[k])).toFixed(3)));
+      const local = (smooth - CH[ch]) / (CH[ch + 1] - CH[ch]);   // captions sit in the middle of their chapter
+      caps.forEach((c, k) => c.classList.toggle('on', k === ch && local > 0.12 && local < 0.88 && smooth > 0.015));
+      cue.style.opacity = smooth > 0.02 ? '0' : '1';
+      if (smooth !== target) raf = requestAnimationFrame(frame);   // a frame that finishes decoding kicks a redraw itself
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+
+    // frames start downloading when the film is about a screen and a half away
+    const near = new IntersectionObserver(en => { if (en.some(x => x.isIntersecting) && !started) { started = true; near.disconnect(); size(); load(); } }, { rootMargin: '150% 0px' });
+    near.observe(track);
+    new IntersectionObserver(en => {
+      onStage = en[0].isIntersecting;
+      if (onStage) addEventListener('scroll', kick, { passive: true }); else removeEventListener('scroll', kick);
+      kick();
+    }).observe(track);
+    addEventListener('resize', () => { if (started) size(); }, { passive: true });
+  }
+
   /* ---------- statement columns: each one types itself out once, with a caret ---------- */
   function initTyping() {
     const box = $('[data-cols]', root); if (!box || reduced) return;
@@ -473,7 +568,7 @@
     requestAnimationFrame(() => setTimeout(() => {
       initStatement(); initTyping();
       setTimeout(() => { initHorizon(); initWorkTitle(); initBeams(); initFX(); }, 0);
-      setTimeout(() => { initNight(); initStarTitle(); }, 0);
+      setTimeout(() => { initNight(); initStarTitle(); initLab(); }, 0);
     }, 0));
     afterLoad(loadHeroVideo, isTouch ? 800 : 200);
     afterLoad(scheduleGitHub, 0);

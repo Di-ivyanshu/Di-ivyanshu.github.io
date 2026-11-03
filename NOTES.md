@@ -18,6 +18,11 @@ sh _src/build/build.sh          # needs Python 3 + esbuild (npx)
   original dune loop) load after the page
 - sunset palette lives in the template's CSS tokens (`--accent:#ff7a3d`); the Work "horizon" band is SVG + CSS,
   animated by `initHorizon()` in `_src/js/app.js`
+- Open source opens on a night band (stars, constellations, rising moon): `initNight()` / `initStarTitle()`
+- Lab is a scroll film: `assets/lab/l/` (1024px) and `assets/lab/s/` (640px, phones) hold 90 of CHIRON's 540
+  frames (`00.webp`…`89.webp`, every 6th frame of https://di-ivyanshu.github.io/chiron-scroll/frames/), scrubbed on a
+  canvas by `initLab()`. Frames are fetched only when the visitor gets near the section; reduced motion and
+  data saver get the poster frame (`l/49.webp`) instead
 
 SEO files at the root: `robots.txt`, `sitemap.xml` (update `lastmod` when content changes),
 `site.webmanifest`, `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, `icon-512.png`.

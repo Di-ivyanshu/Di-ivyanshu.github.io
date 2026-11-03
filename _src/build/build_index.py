@@ -112,7 +112,7 @@ def main():
     body = body.replace('style="width:100%;display:block;aspect-ratio:16/9;', 'style="width:100%;height:auto;display:block;aspect-ratio:16/9;')
 
     # project videos: poster frame, nothing downloaded until the card is on screen
-    for key, name in {'vidGateway': 'llm-gateway-dashboard', 'vidNocturne': 'nocturne-graph', 'vidChiron': 'chiron-motion'}.items():
+    for key, name in {'vidGateway': 'llm-gateway-dashboard', 'vidNocturne': 'nocturne-graph'}.items():
         body = sub1(r'src="\{\{ ' + key + r' \}\}" muted="\{\{ true \}\}" loop="\{\{ true \}\}" sc-camel-plays-inline="\{\{ true \}\}" preload="auto"',
                     f'src="assets/{name}.mp4" data-poster="assets/{name}-poster.webp" muted loop playsinline preload="none" aria-hidden="true"', body)
 
