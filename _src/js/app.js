@@ -13,7 +13,7 @@
   const isTouch = matchMedia('(pointer: coarse)').matches;
   const saveData = !!(navigator.connection && navigator.connection.saveData);
   const root = ref('root') || document.body;
-  // one particle shape per entry (fx.js): in Lab the dots become CHIRON, then the film rises over them
+  // one particle shape per entry (fx.js); in Lab they stay faint behind the CHIRON light scene and the film
   const SECTIONS = ['top', 'statement', 'work', 'oss', 'lab-dots', 'lab-film', 'skills', 'contact'];
 
   // run fn once the page has loaded and the main thread is idle
@@ -294,6 +294,35 @@
     }
   }
 
+  /* ---------- lab: CHIRON's light signature — the outline draws in the dark, the four-LED lamps light pair by pair
+     (outer to inner), the horseshoe glows, then the light floods the screen and fades as the film arrives ---------- */
+  function initLight() {
+    const box = $('[data-lab-light]', root); if (!box) return;
+    if (reduced) { box.setAttribute('data-static', ''); return; }   // the lit car, still
+    box.setAttribute('data-live', '');
+    const leds = [0, 1, 2, 3].map(k => $$('[data-led="' + k + '"]', box));
+    const clamp = t => Math.min(1, Math.max(0, t)), ease = t => 1 - Math.pow(1 - t, 3);
+    let queued = false, lit = -1;
+    const update = () => {
+      queued = false;
+      const r = box.getBoundingClientRect(), p = clamp(-r.top / Math.max(1, r.height - innerHeight));
+      const out = 1 - clamp((p - 0.93) / 0.07);   // the light lets go as the film comes up
+      box.style.setProperty('--draw', ease(clamp(p / 0.28)).toFixed(3));
+      box.style.setProperty('--hs', clamp((p - 0.52) / 0.1).toFixed(3));
+      box.style.setProperty('--flood', (ease(clamp((p - 0.64) / 0.24)) * out).toFixed(3));
+      box.style.setProperty('--wash', (clamp((p - 0.8) / 0.1) * out).toFixed(3));
+      let n = 0; while (n < 4 && p >= 0.3 + n * 0.06) n++;
+      if (n !== lit) { lit = n; leds.forEach((g, k) => g.forEach(el => el.classList.toggle('on', k < n))); }
+    };
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    new IntersectionObserver(en => {
+      if (en[0].isIntersecting) addEventListener('scroll', onScroll, { passive: true }); else removeEventListener('scroll', onScroll);
+      onScroll();
+    }).observe(box);
+    addEventListener('resize', onScroll, { passive: true });
+    update();
+  }
+
   /* ---------- lab: CHIRON's frames scrubbed on a canvas by the scroll, with its chapters and a live readout ---------- */
   function initLab() {
     const track = $('[data-lab-track]', root); if (!track) return;
@@ -549,7 +578,7 @@
     const canvas = ref('hero'); if (!canvas || !window.PortfolioFX) return;
     const s = document.createElement('script'); s.src = 'assets/js/vendor/three.min.js'; s.async = true;
     s.onload = () => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
-      try { if (window.PortfolioFX.initHero(canvas, null, SECTIONS, { heroAlpha: 0.22 })) document.documentElement.classList.add('dots'); } catch (e) { /* no WebGL: the page is complete without it */ }
+      try { window.PortfolioFX.initHero(canvas, null, SECTIONS, { heroAlpha: 0.22 }); } catch (e) { /* no WebGL: the page is complete without it */ }
     });
     document.head.appendChild(s);
   }
@@ -569,7 +598,7 @@
     requestAnimationFrame(() => setTimeout(() => {
       initStatement(); initTyping();
       setTimeout(() => { initHorizon(); initWorkTitle(); initBeams(); initFX(); }, 0);
-      setTimeout(() => { initNight(); initStarTitle(); initLab(); }, 0);
+      setTimeout(() => { initNight(); initStarTitle(); initLight(); initLab(); }, 0);
     }, 0));
     afterLoad(loadHeroVideo, isTouch ? 800 : 200);
     afterLoad(scheduleGitHub, 0);

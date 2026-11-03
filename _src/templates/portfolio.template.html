@@ -761,9 +761,6 @@ video{display:block}
 }
 @media (prefers-reduced-motion:reduce){[data-tw]{animation:none!important;opacity:.7}}
 /* ---- lab: a scroll film running inside the page ---- */
-/* room for the background dots to become CHIRON and turn with the scroll (only once the particle field runs) */
-.dots [data-lab-dots]{height:115vh}
-@media (max-width:760px){.dots [data-lab-dots]{height:95svh}}
 .js [data-lab-track]{height:300vh}
 [data-lab-track][data-static]{height:auto!important}
 [data-lab-track][data-static] [data-lab-stage]{position:relative;height:min(78vh,720px)}
@@ -789,6 +786,31 @@ html:not(.js) [data-cap="4"],[data-lab-track][data-static] [data-cap="4"]{opacit
 }
 @media (max-width:760px){[data-lab-hud]{top:auto!important;right:auto!important;left:16px;bottom:34px}}
 @media (prefers-reduced-motion:reduce){.js [data-lab-track]{height:auto}[data-lab-stage]{position:relative!important;height:min(78vh,720px)!important}[data-lab-cue],[data-lab-hud]{display:none}[data-cap="4"]{opacity:1;transform:none}}
+/* ---- lab: CHIRON's light signature before the film ---- */
+[data-lab-light]{--draw:1;--hs:1;--flood:0;--wash:0}
+[data-ll-stage]{--w:min(1080px,94vw)}
+.js [data-lab-light]{height:250vh}
+[data-lab-light][data-static]{height:auto!important}
+[data-lab-light][data-static] [data-ll-stage],html:not(.js) [data-ll-stage]{position:relative!important;height:min(78vh,640px)!important}
+[data-ll-lines] path{stroke-opacity:.34;stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--draw))}
+[data-ll-lines] path:nth-last-child(-n+2){stroke-opacity:.5}
+[data-ll-shoe] path:not([data-ll-shoe-glow]){stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--draw));stroke-opacity:calc(.4 + .6 * var(--hs))}
+[data-ll-shoe-glow]{opacity:calc(var(--hs) * .9)}
+[data-ll-badge]{opacity:calc(.15 + .85 * var(--hs))}
+[data-ll-leds] rect{fill:#191b20;stroke:rgba(241,232,218,.32);stroke-width:1;vector-effect:non-scaling-stroke;transition:fill .25s}
+[data-ll-glow] rect{fill:#dcebff;opacity:0;transition:opacity .35s}
+/* lit: the default (no script, reduced motion) and every lamp the scroll has reached */
+[data-lab-light]:not([data-live]) [data-ll-leds] rect,[data-ll-leds] rect.on{fill:#f6faff;stroke:#fff}
+[data-lab-light]:not([data-live]) [data-ll-glow] rect,[data-ll-glow] rect.on{opacity:1}
+[data-ll-leds] rect.on,[data-ll-glow] rect.on{animation:ledOn .55s steps(1,end)}
+@keyframes ledOn{0%{opacity:.15}12%{opacity:1}22%{opacity:.3}34%{opacity:1}46%{opacity:.55}58%{opacity:1}}
+[data-ll-beam]{position:absolute;top:50%;width:calc(var(--w) * .5);aspect-ratio:1;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#fffaf0 0%,rgba(255,240,214,.7) 14%,rgba(255,214,170,.22) 38%,rgba(255,190,140,0) 66%);opacity:var(--flood);transform:translate(-50%,-50%) scale(calc(.12 + var(--flood) * 5.5));will-change:transform,opacity}
+[data-ll-beam="l"]{left:calc(50% - var(--w) * .32)}
+[data-ll-beam="r"]{left:calc(50% + var(--w) * .32)}
+[data-ll-wash]{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 50% 50%,#fff8ec 0%,#ffe9cf 45%,#f6c99c 100%);opacity:var(--wash);will-change:opacity}
+[data-ll-car]{opacity:calc(1 - var(--wash) * .9)}
+@media (max-width:760px){.js [data-lab-light]{height:210vh}[data-ll-stage]{--w:96vw}}
+@media (prefers-reduced-motion:reduce){.js [data-lab-light]{height:auto}[data-ll-stage]{position:relative!important;height:min(78vh,640px)!important}}
 </style>
 
 </helmet>
@@ -997,7 +1019,20 @@ html:not(.js) [data-cap="4"],[data-lab-track][data-static] [data-cap="4"]{opacit
 </div>
 <svg data-rim aria-hidden="true" viewBox="0 0 1200 24" preserveAspectRatio="none" style="display:block;width:100%;height:22px;margin-top:4px;overflow:visible"><defs><linearGradient id="rim-lab" x1="0" x2="1"><stop offset="0" stop-color="#ff7a3d" stop-opacity="0"/><stop offset=".5" stop-color="#ffb070" stop-opacity=".85"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></linearGradient></defs><path d="M0,18 C200,6 380,8 600,14 C820,20 1000,4 1200,10" fill="none" stroke="url(#rim-lab)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>
 </div>
-<div id="lab-dots" data-lab-dots aria-hidden="true"></div>
+<div id="lab-dots" data-lab-light aria-hidden="true" style="position:relative;width:100vw;margin-left:calc(50% - 50vw)">
+<div data-ll-stage style="position:sticky;top:0;height:100vh;height:100svh;overflow:hidden">
+<div data-ll-beam="l"></div><div data-ll-beam="r"></div>
+<svg data-ll-car viewBox="0 0 1000 560" style="position:absolute;left:50%;top:50%;width:var(--w);height:auto;transform:translate(-50%,-50%);overflow:visible">
+<defs><filter id="llglow" x="-60%" y="-120%" width="220%" height="340%"><feGaussianBlur stdDeviation="9"/></filter><filter id="llglow2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+<g data-ll-lines fill="none" stroke="#f1e8da" stroke-width="1.3" vector-effect="non-scaling-stroke"><path pathLength="1" d="M500,46 C410,46 300,50 226,62"/><path pathLength="1" d="M500,46 C590,46 700,50 774,62"/><path pathLength="1" d="M226,62 C192,92 152,140 126,172"/><path pathLength="1" d="M774,62 C808,92 848,140 874,172"/><path pathLength="1" d="M126,172 C240,164 380,160 500,160"/><path pathLength="1" d="M874,172 C760,164 620,160 500,160"/><path pathLength="1" d="M150,170 C126,152 86,142 66,152 C56,164 70,180 102,181 C124,182 140,179 150,173"/><path pathLength="1" d="M850,170 C874,152 914,142 934,152 C944,164 930,180 898,181 C876,182 860,179 850,173"/><path pathLength="1" d="M126,172 C96,182 58,204 40,246 C30,300 30,420 40,488 C46,504 62,512 92,514 C230,517 380,518 500,518"/><path pathLength="1" d="M874,172 C904,182 942,204 960,246 C970,300 970,420 960,488 C954,504 938,512 908,514 C770,517 620,518 500,518"/><path pathLength="1" d="M312,266 C290,230 250,196 214,166"/><path pathLength="1" d="M688,266 C710,230 750,196 786,166"/><path pathLength="1" d="M462,292 C452,250 440,205 430,162"/><path pathLength="1" d="M538,292 C548,250 560,205 570,162"/><path pathLength="1" d="M394,356 C330,350 212,352 122,361 C106,382 102,420 110,448 C200,453 320,457 390,459 C397,430 399,386 394,356 Z"/><path pathLength="1" d="M606,356 C670,350 788,352 878,361 C894,382 898,420 890,448 C800,453 680,457 610,459 C603,430 601,386 606,356 Z"/><path pathLength="1" d="M60,494 C200,503 350,505 500,505"/><path pathLength="1" d="M940,494 C800,503 650,505 500,505"/><path pathLength="1" d="M50,330 C56,380 58,430 56,470"/><path pathLength="1" d="M950,330 C944,380 942,430 944,470"/><path pathLength="1" d="M500,160 L500,266"/><path pathLength="1" d="M66,262 C122,248 232,250 302,268 C308,282 294,297 272,299 C202,302 112,297 78,291 C64,285 61,271 66,262 Z"/><path pathLength="1" d="M934,262 C878,248 768,250 698,268 C692,282 706,297 728,299 C798,302 888,297 922,291 C936,285 939,271 934,262 Z"/></g>
+<g data-ll-shoe fill="none" vector-effect="non-scaling-stroke"><path data-ll-shoe-glow d="M500,268 C454,268 410,290 404,344 C398,398 400,446 408,478 C412,494 428,502 456,502 L500,502 M500,268 C546,268 590,290 596,344 C602,398 600,446 592,478 C588,494 572,502 544,502 L500,502" stroke="#ffe7c4" stroke-width="10" filter="url(#llglow2)"/><path pathLength="1" d="M500,268 C454,268 410,290 404,344 C398,398 400,446 408,478 C412,494 428,502 456,502 L500,502 M500,268 C546,268 590,290 596,344 C602,398 600,446 592,478 C588,494 572,502 544,502 L500,502" stroke="#f1e8da" stroke-width="2.2"/><path pathLength="1" d="M500,282 C460,282 424,302 418,348 C413,398 414,442 421,468 C425,482 438,489 458,489 L500,489 M500,282 C540,282 576,302 582,348 C587,398 586,442 579,468 C575,482 562,489 542,489 L500,489" stroke="#f1e8da" stroke-width="1.2"/></g>
+<ellipse data-ll-badge cx="500" cy="298" rx="13" ry="7" fill="#e0353b" stroke="#f1e8da" stroke-width="1" vector-effect="non-scaling-stroke"/>
+<g data-ll-glow filter="url(#llglow)"><rect data-led="0" class="lg" x="83" y="268" width="38" height="18" rx="5" transform="rotate(3 102 277)"/><rect data-led="0" class="lg" x="879" y="268" width="38" height="18" rx="5" transform="rotate(-3 898 277)"/><rect data-led="1" class="lg" x="133" y="270" width="38" height="18" rx="5" transform="rotate(3 152 279)"/><rect data-led="1" class="lg" x="829" y="270" width="38" height="18" rx="5" transform="rotate(-3 848 279)"/><rect data-led="2" class="lg" x="185" y="273" width="38" height="18" rx="5" transform="rotate(3 204 282)"/><rect data-led="2" class="lg" x="777" y="273" width="38" height="18" rx="5" transform="rotate(-3 796 282)"/><rect data-led="3" class="lg" x="237" y="276" width="38" height="18" rx="5" transform="rotate(3 256 285)"/><rect data-led="3" class="lg" x="725" y="276" width="38" height="18" rx="5" transform="rotate(-3 744 285)"/></g>
+<g data-ll-leds><rect data-led="0" class="ld" x="83" y="268" width="38" height="18" rx="5" transform="rotate(3 102 277)"/><rect data-led="0" class="ld" x="879" y="268" width="38" height="18" rx="5" transform="rotate(-3 898 277)"/><rect data-led="1" class="ld" x="133" y="270" width="38" height="18" rx="5" transform="rotate(3 152 279)"/><rect data-led="1" class="ld" x="829" y="270" width="38" height="18" rx="5" transform="rotate(-3 848 279)"/><rect data-led="2" class="ld" x="185" y="273" width="38" height="18" rx="5" transform="rotate(3 204 282)"/><rect data-led="2" class="ld" x="777" y="273" width="38" height="18" rx="5" transform="rotate(-3 796 282)"/><rect data-led="3" class="ld" x="237" y="276" width="38" height="18" rx="5" transform="rotate(3 256 285)"/><rect data-led="3" class="ld" x="725" y="276" width="38" height="18" rx="5" transform="rotate(-3 744 285)"/></g>
+</svg>
+<div data-ll-wash></div>
+</div>
+</div>
 <div id="lab-film" data-lab-track style="position:relative;width:100vw;margin-left:calc(50% - 50vw);margin-top:20px">
 <div data-lab-stage style="position:sticky;top:0;height:100vh;height:100svh;padding:clamp(10px,1.6vw,22px);box-sizing:border-box;display:flex">
 <div data-lab-window style="position:relative;flex:1;border-radius:clamp(18px,2vw,28px);overflow:hidden;background:#04050a;color:#fff;box-shadow:0 0 0 1px rgba(241,232,218,.12),0 50px 140px -50px rgba(255,122,61,.45)">
